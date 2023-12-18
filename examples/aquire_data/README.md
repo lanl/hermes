@@ -31,23 +31,19 @@ Working Directory
 ├── [run_N]
 ```
 
+For all of these examples, the main python library for data aquisition with hermes is `tpx3serval.py`. It can be loaded using the following:
+
+```python
+from pyhermes import tpx3serval
+```
+
 ### Prerequisites
 
 List any prerequisites or dependencies required for running the examples, such as Python versions, libraries, or other software.
 
 ### Installation
 
-Provide instructions on how to install any necessary libraries or dependencies. For example:
-
-Here are several examples of how HERMES can be used to setup and aquire data (or images) using the TPX3Cam and SPIDR readout boards. 
-
-For all of these examples the main python library for data aquisition with hermes is tpx3serval.py. It can be loaded using the following:
-
-```python
-from pyhermes import tpx3serval
-```
-
-# 1. daq_simple #
+# 1. daq_simple/ #
 This example illustrated a simple python script, aquireTpx.py, to first initiate and configure a TPX3Cam setup, and then take "n" exposures using functions from the tpx3serval library (located in pyhermes). Initial camera and needed DAQ configurations are stored in the config file: "aquireTpx3.ini".  
 
-# 2. daq_ctscan #
+# 2. daq_ctscan/ #

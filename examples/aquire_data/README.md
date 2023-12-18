@@ -6,27 +6,29 @@ This repository contains examples demonstrating the use of HERMES for setting up
 
 To use these examples, first ensure you have the HERMES system and the necessary hardware components set up. You will need TPX3Cam and SPIDR readout boards configured and connected to your system. Please see the ASI TPX3Cam manual for hardware setup and connections. 
 
-Additionaly we suggest using a directory structure adopted from EMPIR. 
+Additionaly we suggest using a directory structure adopted from EMPIR. There are built-in functions in tpx3serval that will create the `[run_N]` directory and its sub-directories. Please make sure that the python scripts used to aquire data are located in the scripts folder of your working directory. 
 
 ```
 Working Directory
 ├── README.md
 ├── scripts
+    └── aquire_python_script.py
+    └── aquire_config.ini
 ├── initFiles
-├── [sub_run_1]
+├── [run_1]
     ├── imageFiles
     ├── previewFiles
     ├── statusFiles
     ├── tpx3Files
     ├── tpx3Logs
-├── [sub_run_2]
+├── [run_2]
     ├── imageFiles
     ├── previewFiles
     ├── statusFiles
     ├── tpx3Files
     ├── tpx3Logs
-├── [sub_run_3]
-├── [sub_run_...]
+├── [run_3]
+├── [run_N]
 ```
 
 ### Prerequisites

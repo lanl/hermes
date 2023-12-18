@@ -8,6 +8,7 @@ To use these examples, first ensure you have the HERMES system and the necessary
 
 Additionaly we suggest using a directory structure adopted from EMPIR. 
 
+```
 Working Directory
 ├── README.md
 ├── scripts
@@ -26,6 +27,7 @@ Working Directory
     ├── tpx3Logs
 ├── [sub_run_3]
 ├── [sub_run_...]
+```
 
 ### Prerequisites
 

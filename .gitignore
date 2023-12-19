@@ -1,0 +1,20 @@
+#ignore all text files. 
+*.txt
+
+# ignore any data directories 
+./data/
+
+# ignore any tpx3 files
+*.tpx3
+
+# ignore all __pycache__
+__pycache__
+
+# ignore any .gif files
+*.gif
+
+# ignore any .vscode files
+.vscode/*
+
+# ignore all .o files
+*.o

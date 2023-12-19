@@ -31,7 +31,7 @@ Working Directory
 ├── [run_N]
 ```
 
-For all of these examples, the main python library for data aquisition with hermes is `tpx3serval.py`. It can be loaded using the following:
+For all of the data aquisition examples, the main python library used within hermes is `tpx3serval.py`. It can be loaded using the following:
 
 ```python
 from pyhermes import tpx3serval

@@ -1,9 +1,6 @@
 #ignore all text files. 
 *.txt
 
-# ignore any data directories 
-./data/
-
 # ignore any tpx3 files
 *.tpx3
 

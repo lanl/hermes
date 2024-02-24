@@ -118,7 +118,7 @@ int main(int argc, char *argv[]){
                 }
 
                 // Starting grouping signals into photon events using Spatial-Temporal DBSCAN.
-                ST_DBSCAN(signalDataArray, signalGroupID, params.epsSpatial, params.epsTemporal, params.minPts, dataPacketsInBuffer);
+                // ST_DBSCAN(signalDataArray, signalGroupID, params.epsSpatial, params.epsTemporal, params.minPts, dataPacketsInBuffer);
 
 
                 //printGroupIDs(signalDataArray,signalGroupID,dataPacketsInBuffer);

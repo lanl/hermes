@@ -14,6 +14,7 @@
 
 // Declarations of variables
 extern int numberOfHeaders;
+extern int numberOfBuffers;
 extern int numberOfTDCPackets;
 extern int numberOfPixelPackets;
 extern int numberOfGlobalTSPackets;

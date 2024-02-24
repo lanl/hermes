@@ -108,6 +108,7 @@ int main(int argc, char *argv[]){
 
                 if (params.sortSignals){
                     // Sort the signalDataArray based on ToaFinal
+                    std::cout << "Sorting raw signal data. " << std::endl;
                     std::sort(signalDataArray, signalDataArray + dataPacketsInBuffer,[](const signalData &a, const signalData &b) -> bool {return a.ToaFinal < b.ToaFinal;});
                 }
 
@@ -128,6 +129,14 @@ int main(int argc, char *argv[]){
                 delete[] datapackets;
                 delete[] signalDataArray;
                 delete[] signalGroupID;
+            }
+            
+            // Increment and check buffer count against the limit if it's non-zero
+            if (params.maxBuffersToRead > 0 && ++numberOfBuffers >= params.maxBuffersToRead) {
+                if (params.verbose) {
+                    std::cout << "Limit of " << params.maxBuffersToRead << " buffers reached, stopping processing." << std::endl;
+                }
+                break; // Exit loop if limit reached
             }
         }
 

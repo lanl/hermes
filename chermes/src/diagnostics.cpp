@@ -4,6 +4,7 @@
 #include "diagnostics.h"
 
 int numberOfHeaders = 0;
+int numberOfBuffers = 0;
 int numberOfTDCPackets = 0;
 int numberOfPixelPackets = 0;
 int numberOfGlobalTSPackets = 0;

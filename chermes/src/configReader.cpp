@@ -33,7 +33,8 @@ bool readConfigFile(const std::string &filename, configParameters &params) {
             } else if (value == "false") {
                 params.writeRawSignals = false;
             } else {
-                std::cerr << "Invalid value for writeRawSignals in config file. Expected 'true' or 'false'." << std::endl;
+                std::cerr << ">CONFIG ERROR: Invalid value of '"<< value <<"' for writeRawSignals in config file." << std::endl;
+                std::cerr << ">CONFIG ERROR: Expected 'true' or 'false'. Setting to defualt value" << std::endl;
             }
         } else if (key == "maxBuffersToRead") {
             params.maxBuffersToRead = std::stoi(value);
@@ -43,7 +44,8 @@ bool readConfigFile(const std::string &filename, configParameters &params) {
             } else if (value == "false") {
                 params.sortSignals = false;
             } else {
-                std::cerr << "Invalid value for sortSignals in config file. Expected 'true' or 'false'." << std::endl;
+                std::cerr << ">CONFIG ERROR: Invalid value of '"<< value <<"' for sortSignals in config file." << std::endl;
+                std::cerr << ">CONFIG ERROR: Expected 'true' or 'false'. Setting to defualt value" << std::endl;
             }
         } else if (key == "verbose") {
             if (value == "true") {
@@ -51,7 +53,8 @@ bool readConfigFile(const std::string &filename, configParameters &params) {
             } else if (value == "false") {
                 params.verbose = false;
             } else {
-                std::cerr << "Invalid value for verbose in config file. Expected 'true' or 'false'." << std::endl;
+                std::cerr << ">CONFIG ERROR: Invalid value of '"<< value <<"' for verbose in config file." << std::endl;
+                std::cerr << ">CONFIG ERROR: Expected 'true' or 'false'. Setting to defualt value" << std::endl;
             }
         } else if (key == "fillHistgrams") {
             if (value == "true") {
@@ -59,7 +62,8 @@ bool readConfigFile(const std::string &filename, configParameters &params) {
             } else if (value == "false") {
                 params.fillHistgrams = false;
             } else {
-                std::cerr << "Invalid value for fillHistgrams in config file. Expected 'true' or 'false'." << std::endl;
+                std::cerr << ">CONFIG ERROR: Invalid value of '"<< value <<"' for fill Histgrams in config file." << std::endl;
+                std::cerr << ">CONFIG ERROR: Expected 'true' or 'false'. Setting to defualt value" << std::endl;
             }
         } else if (key == "clusterPixels") {
             if (value == "true") {
@@ -67,7 +71,8 @@ bool readConfigFile(const std::string &filename, configParameters &params) {
             } else if (value == "false") {
                 params.clusterPixels = false;
             } else {
-                std::cerr << "Invalid value for clusterPixels in config file. Expected 'true' or 'false'." << std::endl;
+                std::cerr << ">CONFIG ERROR: Invalid value of '"<< value <<"' for clusterPixels in config file." << std::endl;
+                std::cerr << ">CONFIG ERROR: Expected 'true' or 'false'. Setting to defualt value" << std::endl;
             }
         } else if (key == "epsSpatial") {
             params.epsSpatial = std::stoi(value);

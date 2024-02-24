@@ -28,18 +28,17 @@ int main(int argc, char *argv[]){
         std::cerr << "Please provide the path to the config file as a command-line argument." << std::endl;
         return 1; // Exit the program with an error code
     }
+    if (params.verbose){printParameters}
 
     // Use the command-line argument for the config file path
     const char* configFilePath = argv[1];
 
-    if (readConfigFile(configFilePath, params)) {
-        std::cout << "Config parameters ===================================================" << std::endl;
-        std::cout << "inputTPX3File: " << params.tpxFileName << std::endl;
-        std::cout << "epsSpatial: " << params.epsSpatial << std::endl;
-        std::cout << "epsTemporal: " << params.epsTemporal << std::endl;
-        std::cout << "minPts: " << params.minPts << std::endl;
-        std::cout << "=====================================================================" << std::endl;
-    }
+    // Check if the configuration file was successfully read
+    if (!readConfigFile(configFilePath, params)) {
+        std::cerr << "Error: Failed to read configuration file: " << configFilePath << std::endl;
+        return 1; // Exit the program with an error code
+    } 
+
 
     std::ifstream tpxFile(params.tpxFileName, std::ios::binary);
     ofstream rawSignalsFile("output/rawSignals.bin", ios::out | ios::binary);
@@ -54,7 +53,7 @@ int main(int argc, char *argv[]){
 
         char* HeaderBuffer = new char[8];
 
-        std::cout << "Opening and Sorting TPX3 file =======================================" << std::endl; 
+        std::cout << "Opening and Sorting TPX3 file ===========================" << std::endl; 
         while(tpxFile.read(HeaderBuffer, 8)) {  // Read header buffer
 
             if (HeaderBuffer[0] == 'T' && HeaderBuffer[1] == 'P' && HeaderBuffer[2] == 'X') {
@@ -108,19 +107,24 @@ int main(int argc, char *argv[]){
 
                 if (params.sortSignals){
                     // Sort the signalDataArray based on ToaFinal
-                    std::cout << "Sorting raw signal data. " << std::endl;
+                    if (params.verbose) {
+                        std::cout <<"Buffer "<< numberOfBuffers<< ": Sorting raw signal data. " << std::endl;
+                    }
                     std::sort(signalDataArray, signalDataArray + dataPacketsInBuffer,[](const signalData &a, const signalData &b) -> bool {return a.ToaFinal < b.ToaFinal;});
                 }
 
                 if (params.writeRawSignals){
-                    // Write out the raw signals file.
-                    std::cout << "Writing out raw signal data. " << std::endl;
+                    if (params.verbose) {
+                        std::cout <<"Buffer "<< numberOfBuffers<< ": Writing out raw signal data. " << std::endl;
+                    }
                     rawSignalsFile.write(reinterpret_cast<char*>(signalDataArray), sizeof(signalData) * dataPacketsInBuffer);
                 }
 
                 // Starting grouping signals into photon events using Spatial-Temporal DBSCAN.
                 if (params.clusterPixels){
-                    std::cout << "Clustering pixels based on DBSCAN " << std::endl;
+                    if (params.verbose) {
+                        std::cout <<"Buffer "<< numberOfBuffers<< ": Clustering pixels based on DBSCAN " << std::endl;
+                    }
                     ST_DBSCAN(signalDataArray, signalGroupID, params.epsSpatial, params.epsTemporal, params.minPts, dataPacketsInBuffer);
                 }
 

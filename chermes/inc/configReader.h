@@ -17,5 +17,6 @@ struct configParameters {
 };
 
 bool readConfigFile(const std::string &filename, configParameters &params);
+void printParameters(configParameters &params);
 
 #endif // CONFIG_READER_H

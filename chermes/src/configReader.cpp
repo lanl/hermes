@@ -86,3 +86,13 @@ bool readConfigFile(const std::string &filename, configParameters &params) {
     configFile.close();
     return true;
 }
+
+void printParameters(configParameters &params){
+    //If the program reaches this point, the configuration file was successfully read
+    std::cout << "Config parameters =======================================" << std::endl;
+    std::cout << "inputTPX3File: " << params.tpxFileName << std::endl;
+    std::cout << "epsSpatial: " << params.epsSpatial << std::endl;
+    std::cout << "epsTemporal: " << params.epsTemporal << std::endl;
+    std::cout << "minPts: " << params.minPts << std::endl;
+    std::cout << "=========================================================" << std::endl;
+}

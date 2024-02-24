@@ -13,6 +13,10 @@ __pycache__
 # ignore any .gif files
 *.gif
 
+# ignore any tiff image files
+*.tiff
+*.tif
+
 # ignore any .vscode files
 .vscode/*
 

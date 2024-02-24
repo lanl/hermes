@@ -12,6 +12,7 @@ struct configParameters {
     bool writeRawSignals = false;
     bool verbose = false;
     bool fillHistgrams = false;
+    bool clusterPixels = false;
 };
 
 bool readConfigFile(const std::string &filename, configParameters &params);

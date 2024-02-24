@@ -1,16 +1,17 @@
 # Compiler and flags
 CXX = g++
-CFLAGS = -Wall -O2 -Iinc -std=c++11 
-LDFLAGS =
+CFLAGS = -Wall -O2
+CXXFLAGS = $(CFLAGS) -Iinc -std=c++11
 
 # Check if the directory exists and CHERMES_DIR is set
 ifeq ($(CHERMES_DIR),)
 $(error CHERMES_DIR is not set. Please set the environment variable CHERMES_DIR to the appropriate directory.)
 else ifneq ($(wildcard $(CHERMES_DIR)/.),)
-CXXFLAGS = -I$(CHERMES_DIR)/inc
+CXXFLAGS += -I$(CHERMES_DIR)/inc
 else
 $(error Directory $(CHERMES_DIR) does not exist)
 endif
+
 
 # Directories
 WRK_DIR = ./

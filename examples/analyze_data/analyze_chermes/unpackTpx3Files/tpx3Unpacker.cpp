@@ -118,8 +118,10 @@ int main(int argc, char *argv[]){
                 }
 
                 // Starting grouping signals into photon events using Spatial-Temporal DBSCAN.
-                // ST_DBSCAN(signalDataArray, signalGroupID, params.epsSpatial, params.epsTemporal, params.minPts, dataPacketsInBuffer);
-
+                if (params.clusterPixels){
+                    std::cout << "Clustering pixels based on DBSCAN " << std::endl;
+                    ST_DBSCAN(signalDataArray, signalGroupID, params.epsSpatial, params.epsTemporal, params.minPts, dataPacketsInBuffer);
+                }
 
                 //printGroupIDs(signalDataArray,signalGroupID,dataPacketsInBuffer);
 

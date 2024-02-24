@@ -65,6 +65,14 @@ bool readConfigFile(const std::string &filename, configParameters &params) {
             } else {
                 std::cerr << "Invalid value for fillHistgrams in config file. Expected 'true' or 'false'." << std::endl;
             }
+        } else if (key == "clusterPixels") {
+            if (value == "true") {
+                params.clusterPixels = true;
+            } else if (value == "false") {
+                params.clusterPixels = false;
+            } else {
+                std::cerr << "Invalid value for clusterPixels in config file. Expected 'true' or 'false'." << std::endl;
+            }
         } 
     }
 

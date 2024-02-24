@@ -27,12 +27,6 @@ bool readConfigFile(const std::string &filename, configParameters &params) {
 
         if (key == "inputTPX3File") {
             params.tpxFileName = value;
-        } else if (key == "epsSpatial") {
-            params.epsSpatial = std::stoi(value);
-        } else if (key == "epsTemporal") {
-            params.epsTemporal = std::stod(value);
-        } else if (key == "minPts") {
-            params.minPts = std::stoi(value);
         } else if (key == "writeRawSignals") {
             if (value == "true") {
                 params.writeRawSignals = true;
@@ -41,6 +35,8 @@ bool readConfigFile(const std::string &filename, configParameters &params) {
             } else {
                 std::cerr << "Invalid value for writeRawSignals in config file. Expected 'true' or 'false'." << std::endl;
             }
+        } else if (key == "maxBuffersToRead") {
+            params.maxBuffersToRead = std::stoi(value);
         } else if (key == "sortSignals") {
             if (value == "true") {
                 params.sortSignals = true;
@@ -73,6 +69,12 @@ bool readConfigFile(const std::string &filename, configParameters &params) {
             } else {
                 std::cerr << "Invalid value for clusterPixels in config file. Expected 'true' or 'false'." << std::endl;
             }
+        } else if (key == "epsSpatial") {
+            params.epsSpatial = std::stoi(value);
+        } else if (key == "epsTemporal") {
+            params.epsTemporal = std::stod(value);
+        } else if (key == "minPts") {
+            params.minPts = std::stoi(value);
         } 
     }
 

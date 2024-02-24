@@ -57,7 +57,7 @@ void expandCluster(signalData* signalDataArray, int16_t* signalGroupID, size_t p
     double timeDuration = maxToa-minToa;    
 
     // Store cluster details (can also add more information if needed in the future)
-    //clusterDetails[clusterId] = {static_cast<int>(neighbors.size() + 1), timeDuration};
+    clusterDetails[clusterId] = {static_cast<int>(neighbors.size() + 1), timeDuration};
     //clusterDetails[clusterId] = std::make_pair(static_cast<int>(neighbors.size() + 1), timeDuration);
 
 }

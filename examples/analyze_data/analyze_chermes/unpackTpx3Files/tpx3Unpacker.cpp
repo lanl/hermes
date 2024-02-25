@@ -135,9 +135,14 @@ int main(int argc, char *argv[]){
                         std::cout <<"Buffer "<< numberOfBuffers<< ": Clustering pixels based on DBSCAN " << std::endl;
                     }
                     ST_DBSCAN(signalDataArray, signalGroupID, params.epsSpatial, params.epsTemporal, params.minPts, dataPacketsInBuffer);
+                    
+
                 }
 
-                //printGroupIDs(signalDataArray,signalGroupID,dataPacketsInBuffer);
+                if(params.maxBuffersToRead < 250 && params.maxBuffersToRead != 0){
+                    printGroupIDs(numberOfBuffers,signalDataArray,signalGroupID,dataPacketsInBuffer);
+                }
+
                 delete[] datapackets;
                 delete[] signalDataArray;
                 delete[] signalGroupID;

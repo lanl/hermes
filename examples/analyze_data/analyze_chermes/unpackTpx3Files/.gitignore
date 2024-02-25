@@ -1,4 +1,4 @@
 tpx3Unpacker
-output/
+output/*
 *.o
 *.config

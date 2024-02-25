@@ -1,5 +1,3 @@
-
-
 #include "structures.h"
 #include "photonRecon.h"
 
@@ -32,34 +30,41 @@ std::vector<size_t> regionQuery(signalData* signalDataArray, size_t pIndex, doub
 }
 
 // Expands the cluster by adding reachable points based on spatial and temporal thresholds.
-void expandCluster(signalData* signalDataArray, int16_t* signalGroupID, size_t pIndex, std::vector<size_t>& neighbors, int clusterId, double epsSpatial, double epsTemporal, int minPts, size_t dataPacketsInBuffer, std::unordered_map<int, clusterInfo>& clusterDetails) {
+void expandCluster(signalData* signalDataArray, int16_t* signalGroupID, size_t pIndex, std::vector<size_t>& neighbors, int clusterId, double epsSpatial, double epsTemporal, int minPts, size_t dataPacketsInBuffer, photonData& pd) {
+    
     signalGroupID[pIndex] = clusterId;
+    
+    // Initialize weighted sums with  initial point in the calculations
+    float weightedSumX = signalDataArray[pIndex].xPixel * signalDataArray[pIndex].TotFinal;    
+    float weightedSumY =  signalDataArray[pIndex].yPixel * signalDataArray[pIndex].TotFinal;    
+    double weightedSumToA = signalDataArray[pIndex].ToaFinal * signalDataArray[pIndex].TotFinal; 
+    uint16_t totalToT = signalDataArray[pIndex].TotFinal;     
 
-    double minToa = signalDataArray[pIndex].ToaFinal;
-    double maxToa = signalDataArray[pIndex].ToaFinal;
-
+    // Loop through pixel neighbors, I think. 
     for (size_t i = 0; i < neighbors.size(); i++) {
+
         size_t qIndex = neighbors[i];
         if (signalGroupID[qIndex] == 0) {
             signalGroupID[qIndex] = clusterId;
-
-            // Update the min and max ToaFinal for the current cluster
-            minToa = std::min(minToa, signalDataArray[qIndex].ToaFinal);
-            maxToa = std::max(maxToa, signalDataArray[qIndex].ToaFinal);
 
             std::vector<size_t> qNeighbors = regionQuery(signalDataArray, qIndex, epsSpatial, epsTemporal, dataPacketsInBuffer);
             if (qNeighbors.size() >= static_cast<size_t>(minPts)) {
                 neighbors.insert(neighbors.end(), qNeighbors.begin(), qNeighbors.end());
             }
         }
+        // Assume ToT is accessible for each signal data point
+        weightedSumX += signalDataArray[qIndex].xPixel * signalDataArray[qIndex].TotFinal;
+        weightedSumY += signalDataArray[qIndex].yPixel * signalDataArray[qIndex].TotFinal;
+        weightedSumToA += signalDataArray[qIndex].ToaFinal * signalDataArray[qIndex].TotFinal;
+        totalToT +=  signalDataArray[qIndex].TotFinal;
+    
     }
-
-    double timeDuration = maxToa-minToa;    
-
-    // Store cluster details (can also add more information if needed in the future)
-    clusterDetails[clusterId] = {static_cast<int>(neighbors.size() + 1), timeDuration};
-    //clusterDetails[clusterId] = std::make_pair(static_cast<int>(neighbors.size() + 1), timeDuration);
-
+    // Calculate CoM based on distribution of x and y pixels and weighted by the tot and update photonData.
+    pd.photon_x = weightedSumX/totalToT; // Calculated weighted center X
+    pd.photon_y = weightedSumY/totalToT; // Calculated weighted center Y
+    pd.photon_toa = weightedSumToA/totalToT;
+    pd.integrated_tot = totalToT; // Total ToT for the cluster
+    
 }
 
 // Implements the ST_DBSCAN clustering algorithm. 
@@ -67,7 +72,9 @@ void expandCluster(signalData* signalDataArray, int16_t* signalGroupID, size_t p
 void ST_DBSCAN(signalData* signalDataArray, int16_t* signalGroupID, double epsSpatial, double epsTemporal, int minPts, size_t dataPacketsInBuffer) {
     
     int clusterId = 0;
-    std::unordered_map<int, clusterInfo> clusterDetails;
+    // Initiate vector of photonData called photons.
+    std::vector<photonData> photons;
+    photonData singlePhoton;
 
     for (size_t i = 0; i < dataPacketsInBuffer; i++) {
         if (signalDataArray[i].signalType != 2) {
@@ -81,11 +88,13 @@ void ST_DBSCAN(signalData* signalDataArray, int16_t* signalGroupID, double epsSp
                 signalGroupID[i] = -1; // noise
             } else {
                 clusterId++;
-                expandCluster(signalDataArray, signalGroupID, i, neighbors, clusterId, epsSpatial, epsTemporal, minPts, dataPacketsInBuffer, clusterDetails);
-                //clusterMultiplicity[clusterId] = neighbors.size() + 1; 
+                expandCluster(signalDataArray, signalGroupID, i, neighbors, clusterId, epsSpatial, epsTemporal, minPts, dataPacketsInBuffer, singlePhoton);
+                photons.push_back(singlePhoton);
             }
         }
     }
+
+
 }
 
 

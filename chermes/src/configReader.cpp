@@ -94,6 +94,15 @@ bool readConfigFile(const std::string &filename, configParameters &params) {
                 std::cerr << ">CONFIG ERROR: Invalid value of '"<< value <<"' for clusterPixels in config file." << std::endl;
                 std::cerr << ">CONFIG ERROR: Expected 'true' or 'false'. Setting to defualt value" << std::endl;
             }
+        } else if (key == "writeClusters") {
+            if (value == "true") {
+                params.writeClusters = true;
+            } else if (value == "false") {
+                params.writeClusters = false;
+            } else {
+                std::cerr << ">CONFIG ERROR: Invalid value of '"<< value <<"' for writeClusters in config file." << std::endl;
+                std::cerr << ">CONFIG ERROR: Expected 'true' or 'false'. Setting to defualt value" << std::endl;
+            }
         } else if (key == "epsSpatial") {
             params.epsSpatial = std::stoi(value);
         } else if (key == "epsTemporal") {
@@ -119,6 +128,7 @@ void printParameters(const configParameters &params) {
     std::cout << "verboseLevel: " << params.verboseLevel << std::endl;
     std::cout << "fillHistgrams: " << (params.fillHistgrams ? "true" : "false") << std::endl;
     std::cout << "clusterPixels: " << (params.clusterPixels ? "true" : "false") << std::endl;
+    std::cout << "writeClusters: " << (params.writeClusters ? "true" : "false") << std::endl;
     std::cout << "epsSpatial: " << params.epsSpatial << std::endl;
     std::cout << "epsTemporal: " << params.epsTemporal << std::endl;
     std::cout << "minPts: " << params.minPts << std::endl;

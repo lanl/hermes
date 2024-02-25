@@ -56,7 +56,7 @@ int main(int argc, char *argv[]){
 
     if (!tpxFile) {
         cout << "This file is not found!" << endl;
-    }  else {
+    } else {
 
         char* HeaderBuffer = new char[8];
 
@@ -129,18 +129,26 @@ int main(int argc, char *argv[]){
                     }
                 }
 
-                // Starting grouping signals into photon events using Spatial-Temporal DBSCAN.
+                // If clustering is turned on then start grouping signals into photon events using Spatial-Temporal DBSCAN.
                 if (params.clusterPixels){
+
+                    // Print message for each buffer if verboselevel = 3.
                     if (params.verboseLevel>=3) {
                         std::cout <<"Buffer "<< numberOfBuffers<< ": Clustering pixels based on DBSCAN " << std::endl;
                     }
-                    ST_DBSCAN(signalDataArray, signalGroupID, params.epsSpatial, params.epsTemporal, params.minPts, dataPacketsInBuffer);
-                    
 
+                    if(params.writeClusters==true) {
+                        // sort pixels into clusters (photons) using sorting algorith. 
+                        ST_DBSCAN(signalDataArray, signalGroupID, params.epsSpatial, params.epsTemporal, params.minPts, dataPacketsInBuffer);
+                    } else {
+                        // sort pixels into clusters (photons) using sorting algorith. 
+                        ST_DBSCAN(signalDataArray, signalGroupID, params.epsSpatial, params.epsTemporal, params.minPts, dataPacketsInBuffer);
+                    }
                 }
-
+                
+                //
                 if(params.maxBuffersToRead < 250 && params.maxBuffersToRead != 0){
-                    printGroupIDs(numberOfBuffers,signalDataArray,signalGroupID,dataPacketsInBuffer);
+                    //printGroupIDs(numberOfBuffers,signalDataArray,signalGroupID,dataPacketsInBuffer);
                 }
 
                 delete[] datapackets;

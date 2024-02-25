@@ -18,6 +18,7 @@ struct configParameters {
     
     // Basic Clustering Options
     bool clusterPixels = false;
+    bool writeClusters = false;
     int epsSpatial = 0;
     double epsTemporal = 0;
     int minPts = 0;

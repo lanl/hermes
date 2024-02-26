@@ -12,9 +12,9 @@ std::string trim(const std::string& str) {
     return str.substr(first, (last - first + 1));
 }
 
-std::string setOutputFileName(const std::string& str){
+std::string grabRunHandle(const std::string& str){
     size_t lastDotIndex = str.find_last_of('.');
-        return (lastDotIndex != std::string::npos) ? str.substr(0, lastDotIndex) + ".rawSignals" : str + ".rawSignals";
+        return (lastDotIndex != std::string::npos) ? str.substr(0, lastDotIndex) : str;
 }
 
 bool readConfigFile(const std::string &filename, configParameters &params) {
@@ -51,7 +51,7 @@ bool readConfigFile(const std::string &filename, configParameters &params) {
             params.rawTPX3Folder = value;
         } else if (key == "rawTPX3File") {
             params.rawTPX3File = value;
-            params.rawSignalFile = setOutputFileName(value);
+            params.runHandle = grabRunHandle(value);
         } else if (key == "writeRawSignals") {
             if (value == "true") {
                 params.writeRawSignals = true;

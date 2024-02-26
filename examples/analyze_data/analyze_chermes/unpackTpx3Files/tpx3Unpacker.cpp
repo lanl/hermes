@@ -42,7 +42,7 @@ int main(int argc, char *argv[]){
    // If writeRawSignals is true, attempt to open an output file for writing raw signals
     ofstream rawSignalsFile;
     if (params.writeRawSignals) {
-        std::string fullOutputPath = params.outputFolder + "/" + params.rawSignalFile;
+        std::string fullOutputPath = params.outputFolder + "/" + params.runHandle +".rawsignals";
         rawSignalsFile.open(fullOutputPath, ios::out | ios::binary);
         if (!rawSignalsFile) {
             cerr << "Unable to open output file!" << endl;

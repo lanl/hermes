@@ -8,12 +8,12 @@ struct configParameters {
     // Input options
     std::string rawTPX3Folder;  // Directory where raw TPX3 files are located
     std::string rawTPX3File;    // Specific TPX3 file to process
+    std::string runHandle;      // Name of the run number that is being processed.
     
     // Output options
-    bool writeRawSignals = false;               // Flag to write out rawsignals in binrary
-    std::string outputFolder = ".";             // Default to current directory
-    std::string rawSignalFile = "rawSignals";
-    bool writeOutPhotons = false;
+    bool writeRawSignals = false;       // Flag to write out rawsignals in binrary
+    bool writeOutPhotons = false;       // Flag to write out Photon data in binrary
+    std::string outputFolder = ".";     // Default to current directory
     
     // Sorting options
     bool sortSignals = false;   // Flag to sort signals
@@ -32,6 +32,7 @@ struct configParameters {
                                     // 2 = Config and event diagnostics
                                     // 3 = Buffer diagnostics
 };
+
 struct clusterInfo {
     int multiplicity;
     double timeDuration;

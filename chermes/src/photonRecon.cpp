@@ -95,9 +95,11 @@ void ST_DBSCAN(configParameters config, signalData* signalDataArray, int16_t* si
             }
         }
     }
+    /* THis is wrong. I need to open the file before I enter the for loop that iterates through all the buffers. 
     if (config.writeOutPhotons == true){
         // Open a binary file for output
-        std::ofstream outFile("photons.bin", std::ios::binary | std::ios::out);
+        //std::string fullOutputPath = config.outputFolder + "/" + config.runHandle +".photons";
+        //std::ofstream outFile("photons.bin", std::ios::binary | std::ios::out);
         
         if (!outFile) {
             std::cerr << "Error opening file for writing." << std::endl;
@@ -110,7 +112,7 @@ void ST_DBSCAN(configParameters config, signalData* signalDataArray, int16_t* si
         }
 
         outFile.close(); // Close the file when done
-    }
+    }*/
     
 
     // Print out diagnostics here...

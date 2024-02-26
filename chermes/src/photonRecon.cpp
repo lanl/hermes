@@ -1,6 +1,9 @@
 #include "structures.h"
 #include "photonRecon.h"
 
+#include <iostream>
+#include <fstream> 
+
 // Computes the spatial distance between two signal data points using Euclidean distance formula.
 double spatialDistance(const signalData& p1, const signalData& p2) {
     return std::sqrt((p1.xPixel - p2.xPixel) * (p1.xPixel - p2.xPixel) +
@@ -11,7 +14,6 @@ double spatialDistance(const signalData& p1, const signalData& p2) {
 double temporalDistance(const signalData& p1, const signalData& p2) {
     return std::abs(p1.ToaFinal - p2.ToaFinal);
 }
-
 
 // Checks if two signal data points are neighbors based on given spatial and temporal thresholds.
 bool isNeighbor(const signalData& p1, const signalData& p2, double epsSpatial, double epsTemporal) {
@@ -30,7 +32,7 @@ std::vector<size_t> regionQuery(signalData* signalDataArray, size_t pIndex, doub
 }
 
 // Expands the cluster by adding reachable points based on spatial and temporal thresholds.
-void expandCluster(signalData* signalDataArray, int16_t* signalGroupID, size_t pIndex, std::vector<size_t>& neighbors, int clusterId, double epsSpatial, double epsTemporal, int minPts, size_t dataPacketsInBuffer, photonData& pd) {
+void expandCluster(configParameters config, signalData* signalDataArray, int16_t* signalGroupID, size_t pIndex, std::vector<size_t>& neighbors, int clusterId, size_t dataPacketsInBuffer, photonData& pd) {
     
     signalGroupID[pIndex] = clusterId;
     
@@ -47,8 +49,8 @@ void expandCluster(signalData* signalDataArray, int16_t* signalGroupID, size_t p
         if (signalGroupID[qIndex] == 0) {
             signalGroupID[qIndex] = clusterId;
 
-            std::vector<size_t> qNeighbors = regionQuery(signalDataArray, qIndex, epsSpatial, epsTemporal, dataPacketsInBuffer);
-            if (qNeighbors.size() >= static_cast<size_t>(minPts)) {
+            std::vector<size_t> qNeighbors = regionQuery(signalDataArray, qIndex, config.epsSpatial, config.epsTemporal, dataPacketsInBuffer);
+            if (qNeighbors.size() >= static_cast<size_t>(config.minPts)) {
                 neighbors.insert(neighbors.end(), qNeighbors.begin(), qNeighbors.end());
             }
         }
@@ -69,7 +71,7 @@ void expandCluster(signalData* signalDataArray, int16_t* signalGroupID, size_t p
 
 // Implements the ST_DBSCAN clustering algorithm. 
 // It segregates data points into clusters based on spatial and temporal closeness.
-void ST_DBSCAN(signalData* signalDataArray, int16_t* signalGroupID, double epsSpatial, double epsTemporal, int minPts, size_t dataPacketsInBuffer) {
+void ST_DBSCAN(configParameters config, signalData* signalDataArray, int16_t* signalGroupID, size_t dataPacketsInBuffer) {
     
     int clusterId = 0;
     // Initiate vector of photonData called photons.
@@ -83,21 +85,41 @@ void ST_DBSCAN(signalData* signalDataArray, int16_t* signalGroupID, double epsSp
         }
 
         if (signalGroupID[i] == 0) { // unclassified
-            std::vector<size_t> neighbors = regionQuery(signalDataArray, i, epsSpatial, epsTemporal, dataPacketsInBuffer);
-            if (neighbors.size() < static_cast<size_t>(minPts)) {
+            std::vector<size_t> neighbors = regionQuery(signalDataArray, i, config.epsSpatial, config.epsTemporal, dataPacketsInBuffer);
+            if (neighbors.size() < static_cast<size_t>(config.minPts)) {
                 signalGroupID[i] = -1; // noise
             } else {
                 clusterId++;
-                expandCluster(signalDataArray, signalGroupID, i, neighbors, clusterId, epsSpatial, epsTemporal, minPts, dataPacketsInBuffer, singlePhoton);
+                expandCluster(config, signalDataArray, signalGroupID, i, neighbors, clusterId, dataPacketsInBuffer, singlePhoton);
                 photons.push_back(singlePhoton);
             }
         }
     }
+    if (config.writeOutPhotons == true){
+        // Open a binary file for output
+        std::ofstream outFile("photons.bin", std::ios::binary | std::ios::out);
+        
+        if (!outFile) {
+            std::cerr << "Error opening file for writing." << std::endl;
+            return; // Or handle the error as appropriate
+        }
 
+        // Iterate over the photons vector and write each photonData to the file
+        for (const auto& photon : photons) {
+            outFile.write(reinterpret_cast<const char*>(&photon), sizeof(photonData));
+        }
+
+        outFile.close(); // Close the file when done
+    }
+    
+
+    // Print out diagnostics here...
+    //std::cout << "Total number of photons: " << photons.size() << std::endl;
+    //for (size_t i = 0; i < photons.size(); ++i) {
+    //    std::cout << "x = " << photons[i].photon_x << ", "
+    //              << "y = " << photons[i].photon_y << ", "
+    //              << "ToA = " << photons[i].photon_toa << ", "
+    //              << "ToT = " << photons[i].integrated_tot << std::endl;
+    //}
 
 }
-
-
-
-
-

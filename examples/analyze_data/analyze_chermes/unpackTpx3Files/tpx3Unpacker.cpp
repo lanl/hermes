@@ -137,13 +137,8 @@ int main(int argc, char *argv[]){
                         std::cout <<"Buffer "<< numberOfBuffers<< ": Clustering pixels based on DBSCAN " << std::endl;
                     }
 
-                    if(params.writeClusters==true) {
-                        // sort pixels into clusters (photons) using sorting algorith. 
-                        ST_DBSCAN(signalDataArray, signalGroupID, params.epsSpatial, params.epsTemporal, params.minPts, dataPacketsInBuffer);
-                    } else {
-                        // sort pixels into clusters (photons) using sorting algorith. 
-                        ST_DBSCAN(signalDataArray, signalGroupID, params.epsSpatial, params.epsTemporal, params.minPts, dataPacketsInBuffer);
-                    }
+                    // sort pixels into clusters (photons) using sorting algorith. 
+                    ST_DBSCAN(params, signalDataArray, signalGroupID, dataPacketsInBuffer);
                 }
                 
                 //

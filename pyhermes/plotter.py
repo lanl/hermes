@@ -23,7 +23,7 @@ Methods:
     generate_buffer_image: Generates an image representation of pixels based on ToT values.
 #------------------------------------------------------------------------------
 """
-class PlotPixelsInBuffer_3D:
+class PlotPixelsInSingeBuffer_3D:
     def __init__(self, filepath, buffer_number):
         # Initialize the class with file path and buffer number, and load the dataset.
         self.filepath = filepath
@@ -102,29 +102,6 @@ class PlotPixelsInBuffer_3D:
 
 
         
-
-#------------------------------------------------------------------------------
-#  	plotTimeResults:	Plots events after they are sorted into timeGroups
-#
-#	args: 		array of type signleEventData, epsilon, min number of samples
-# 	returns: 	nothing. timeGroup types are updated in event array
-#------------------------------------------------------------------------------
-def plotTimeResults(data):
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    
-    # Get unique timeGroup values
-    unique_timeGroups = np.unique(data['timeGroup'])
-    
-    # Create a scatter plot for each timeGroup
-    for timeGroup in unique_timeGroups:	
-        
-        # filter data based on timeGroups
-        filteredData = data[data['timeGroup'] == timeGroup]
-        
-        ax.scatter(filteredData['xpixel'],filteredData['ypixel'],filteredData['ToA_final'],label=f'timeGroup = {timeGroup}')
-
-    plt.show()
 
 
 #------------------------------------------------------------------------------

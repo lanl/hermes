@@ -2,7 +2,7 @@ import pyhermes.plotter as ph_plotter   # pyhermes plotter class.
 import matplotlib.pyplot as plt
 
 file_path = 'pixelID_example.txt'       # Define the path to your file
-buffer_number = 7                       # Specify the buffer number you're interested in
+buffer_number = 12                       # Specify the buffer number you're interested in
 
 # Initiate a pyhermes plotter class
 plotter = ph_plotter.PlotPixelsInBuffer_3D(file_path, buffer_number)

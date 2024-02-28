@@ -2,17 +2,17 @@ import pyhermes.plotter as ph_plotter   # pyhermes plotter class.
 import matplotlib.pyplot as plt
 
 file_path = 'pixelID_example.txt'       # Define the path to your file
-buffer_number = 6                       # Specify the buffer number you're interested in
+buffer_number = 7                       # Specify the buffer number you're interested in
 
 # Initiate a pyhermes plotter class
 plotter = ph_plotter.PlotPixelsInBuffer_3D(file_path, buffer_number)
 
 # For plotting single plots
-plotter.plot_pixels_vs_toa()
-plt.show()
+#plotter.plot_pixels_vs_toa()
+#plt.show()
 
-plotter.generate_buffer_image(log=True)
-plt.show()
+#plotter.generate_buffer_image(log=True)
+#plt.show()
 
 # For combined plotting you need to first set up the figure and axes. 
 fig3 = plt.figure(figsize=(14, 7))              # Settup figure with layout (side-by)

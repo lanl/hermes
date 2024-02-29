@@ -14,5 +14,11 @@ void processPixelPacket(unsigned long long datapacket, signalData &signalData);
 // Processes a Global Time packet and updates the provided signalData structure.
 void processGlobalTimePacket(unsigned long long datapacket, signalData &signalData);
 
+// Unpack and process entire TPX3File
+void unpackAndSortEntireTPX3File(configParameters configParams)
+
+// Unpack and process TPX3Files buffer by buffer
+void unpackandSortTPX3FileInSequentialBuffers(configParameters configParams);
+
 #endif
 

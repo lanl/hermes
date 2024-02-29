@@ -19,7 +19,7 @@ using namespace std;
 
 int main(int argc, char *argv[]){  
 
-    auto startTime = std::chrono::high_resolution_clock::now();
+    auto hermes_startTime = std::chrono::high_resolution_clock::now();
 
     configParameters params;
 
@@ -39,17 +39,11 @@ int main(int argc, char *argv[]){
     // Print out config parameters based on vebosity level
     if(params.verboseLevel>=2){printParameters(params);}
     
-   // If writeRawSignals is true, attempt to open an output file for writing raw signals
-    ofstream rawSignalsFile;
-    if (params.writeRawSignals) {
-        std::string fullOutputPath = params.outputFolder + "/" + params.runHandle +".rawsignals";
-        rawSignalsFile.open(fullOutputPath, ios::out | ios::binary);
-        if (!rawSignalsFile) {
-            cerr << "Unable to open output file!" << endl;
-            return 1; // Exit with an error code if the output file cannot be opened
-        }
-    }
 
+    
+
+
+    /*
     // Construct the full path to the TPX3 file and read in the file.
     std::string fullTpx3Path = params.rawTPX3Folder + "/" + params.rawTPX3File;
     std::ifstream tpxFile(fullTpx3Path, std::ios::binary);
@@ -162,19 +156,10 @@ int main(int argc, char *argv[]){
 
         delete[] HeaderBuffer;
     }
+    */
+    auto hermes_endTime = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> totalTime = hermes_endTime - hermes_startTime;
 
-    auto endTime = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> totalTime = endTime - startTime;
-
-    // Close the tpx3File
-    if(params.verboseLevel>=1){std::cout << "Closing TPX3 file: "<< params.rawTPX3File << std::endl;}
-    tpxFile.close();
-
-    // If writeRawSignals is true and an output file was created, then close it. 
-    if(params.writeRawSignals){
-        if(params.verboseLevel>=1){std::cout << "Closing raw output file" << std::endl;}
-        rawSignalsFile.close();
-    }
 
     if(params.verboseLevel>=2){
         std::cout << std::endl << "=============== Diagnostics ==============" << std::endl;

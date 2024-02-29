@@ -1,6 +1,8 @@
 // dataPacketProcessor.cpp
 #include <stdio.h>
 #include <iostream>
+#include <fstream>
+#include <chrono>
 
 #include "dataPacketProcessor.h"
 #include "structures.h"
@@ -9,8 +11,10 @@ using namespace std;
 
 const double NANOSECS = 1E-9;
 
-
 // Some global variables, constants, and containers
+unsigned long long fileLength;
+unsigned long long NumofPackets;
+
 double coarseTime;
 unsigned long tmpfine;
 unsigned long trigTimeFine;
@@ -110,6 +114,172 @@ void processGlobalTimePacket(unsigned long long datapacket, signalData &signalDa
 		signalData.ToaFinal = timemaster * 25e-9;
 		signalData.TotFinal = 0;
 	}
+
+}
+
+void unpackAndSortEntireTPX3File(configParameters configParams){
+    
+    // Grab start time.
+    auto startTime = std::chrono::high_resolution_clock::now(); 
+    
+    // Open the TPX3File
+    std::string fullTpx3Path = configParams.rawTPX3Folder + "/" + configParams.rawTPX3File;
+    std::cout << "Opening TPX3 file at path: " << configParams.rawTPX3File << std::endl;
+    std::ifstream tpxFile(fullTpx3Path, std::ios::binary);
+    if (!tpxFile) {throw std::runtime_error("Unable to open input TPX3 file at path: " + fullTpx3Path);}
+
+    // Determine length of file
+    tpxFile.seekg(0, tpxFile.end);  // Move the pointer to the end to find the file length
+    fileLength = tpxFile.tellg();   // Get the length of the file
+    tpxFile.seekg(0, tpxFile.beg);  // Move the pointer back to the beginning of the file for reading
+
+    if(configParams.verboseLevel >=1){
+        cout << "filesize: " << fileLength/(1024*1024) <<"MB" << endl;
+    }
+
+} 
+
+
+void unpackandSortTPX3FileInSequentialBuffers(configParameters configParams){
+
+    auto startTime = std::chrono::high_resolution_clock::now(); 
+    // Open the TPX3File
+    std::string fullTpx3Path = configParams.rawTPX3Folder + "/" + configParams.rawTPX3File;
+    std::cout << "Opening TPX3 file at path: " << configParams.rawTPX3File << std::endl;
+    std::ifstream tpxFile(fullTpx3Path, std::ios::binary);
+    if (!tpxFile) {throw std::runtime_error("Unable to open input TPX3 file at path: " + fullTpx3Path);}
+
+    // Determine length of file
+    tpxFile.seekg(0, tpxFile.end);  // Move the pointer to the end to find the file length
+    fileLength = tpxFile.tellg();   // Get the length of the file
+    tpxFile.seekg(0, tpxFile.beg);  // Move the pointer back to the beginning of the file for reading
+    
+    if(configParams.verboseLevel >=1){
+        cout << "filesize: " << fileLength/(1024*1024) <<"MB" << endl;
+    }
+
+    // If writeRawSignals is true, attempt to create/open an output file for writing raw signals
+    ofstream rawSignalsFile;
+    if (configParams.writeRawSignals) {
+        std::string fullOutputPath = configParams.outputFolder + "/" + configParams.runHandle +".rawsignals";
+        rawSignalsFile.open(fullOutputPath, ios::out | ios::binary);
+        if (!rawSignalsFile) {
+            throw std::runtime_error("Unable to open output file!");
+        }
+    }
+
+    char* HeaderBuffer = new char[8];
+
+    while(tpxFile.read(HeaderBuffer, 8)) {  // Read header buffer
+
+        if (HeaderBuffer[0] == 'T' && HeaderBuffer[1] == 'P' && HeaderBuffer[2] == 'X') {
+            int bufferSize = ((0xff & HeaderBuffer[7]) << 8) | (0xff & HeaderBuffer[6]);
+
+            ++numberOfHeaders;
+            chipnr = HeaderBuffer[4];
+            mode = HeaderBuffer[5];
+
+            // calculate the number of data packets in the buffer
+            int dataPacketsInBuffer = bufferSize/8;
+
+            // Initiate an array of datapackets that is the same size as bufferSize//8
+            unsigned long long* datapackets = new unsigned long long[dataPacketsInBuffer];
+
+            // Initiate an array of signalData called signalDataArray that is the same size as bufferSize//8
+            signalData* signalDataArray = new signalData[dataPacketsInBuffer];
+
+            // Initiate an array of group ID that is the same size 
+            int16_t* signalGroupID = new int16_t[dataPacketsInBuffer];
+            memset(signalGroupID, 0, dataPacketsInBuffer * sizeof(int16_t));
+            
+            // Read the data buffer
+            tpxFile.read((char*)datapackets, bufferSize);  
+
+            // Process each data packet in buffer and update signalDataArray
+            for (int j = 0; j < dataPacketsInBuffer; j++) {
+                
+                //int hdr = (int)(datapackets[j] >> 56);
+                int packetHeader = datapackets[j] >> 60;
+
+                switch (packetHeader){
+                case 0x6:
+                    processTDCPacket(datapackets[j], signalDataArray[j]);
+                    ++numberOfTDCPackets;
+                    break;
+                case 0xb:
+                    processPixelPacket(datapackets[j], signalDataArray[j]);
+                    ++numberOfPixelPackets;
+                    break;
+                case 0x4:
+                    processGlobalTimePacket(datapackets[j], signalDataArray[j]);
+                    ++numberOfGlobalTSPackets;
+                    break;
+                default:
+                    break;
+
+                }
+            
+            }
+            if (params.sortSignals){
+                // Sort the signalDataArray based on ToaFinal
+                if (params.verboseLevel>=3) {
+                    std::cout <<"Buffer "<< numberOfBuffers<< ": Sorting raw signal data. " << std::endl;
+                }
+                std::sort(signalDataArray, signalDataArray + dataPacketsInBuffer,[](const signalData &a, const signalData &b) -> bool {return a.ToaFinal < b.ToaFinal;});
+            }
+
+            if (params.writeRawSignals){
+                if (params.verboseLevel>=3) {
+                    std::cout <<"Buffer "<< numberOfBuffers<< ": Writing out raw signal data. " << std::endl;
+                }
+                if(params.writeRawSignals){
+                    rawSignalsFile.write(reinterpret_cast<char*>(signalDataArray), sizeof(signalData) * dataPacketsInBuffer);
+                }
+            }
+
+            // If clustering is turned on then start grouping signals into photon events using Spatial-Temporal DBSCAN.
+            if (params.clusterPixels){
+
+                // Print message for each buffer if verboselevel = 3.
+                if (params.verboseLevel>=3) {
+                    std::cout <<"Buffer "<< numberOfBuffers<< ": Clustering pixels based on DBSCAN " << std::endl;
+                }
+
+                // sort pixels into clusters (photons) using sorting algorith. 
+                ST_DBSCAN(params, signalDataArray, signalGroupID, dataPacketsInBuffer);
+            }
+            
+            //
+            if(params.maxBuffersToRead < 250 && params.maxBuffersToRead != 0){
+                //printGroupIDs(numberOfBuffers,signalDataArray,signalGroupID,dataPacketsInBuffer);
+            }
+
+            delete[] datapackets;
+            delete[] signalDataArray;
+            delete[] signalGroupID;
+        }
+        
+        // Increment and check buffer count against the limit if it's non-zero
+        if (params.maxBuffersToRead > 0 && ++numberOfBuffers >= params.maxBuffersToRead) {
+            if (params.verboseLevel>=2) {
+                std::cout << "Limit of " << params.maxBuffersToRead << " buffers reached, stopping processing." << std::endl;
+            }
+            break; // Exit loop if limit reached
+        }
+    }
+
+
+
+
+    // Close the TPX3File and print message depending on verbose level. 
+    if(configParams.verboseLevel>=1){std::cout << "Closing TPX3 file: "<< configParams.rawTPX3File << std::endl;}
+    tpxFile.close();
+
+    // If writeRawSignals is true, then also close output file
+    if(configParams.writeRawSignals){
+        if(configParams.verboseLevel>=1){std::cout << "Closing raw output file" << std::endl;}
+        rawSignalsFile.close();
+    }
 
 }
 

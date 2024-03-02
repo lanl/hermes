@@ -10,6 +10,15 @@ int numberOfPixelPackets = 0;
 int numberOfGlobalTSPackets = 0;
 int numberOfPhotons = 0;
 
+/**
+ * @brief converts signal type numbers to more descriptive strings
+ *
+ * This function function takes a HERMES defined structure tpx3FileDianostics
+ * and prints out most of the diagnostic info that might be desired in 
+ *
+ * @param signalType int of signal types (e.g. 1,2,3,..)
+ * @return string description of signal type
+ */
 std::string signalTypeToString(int signalType) {
     switch (signalType) {
         case 1: return "TDC";

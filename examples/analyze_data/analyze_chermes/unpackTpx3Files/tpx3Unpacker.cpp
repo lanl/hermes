@@ -34,7 +34,8 @@ int main(int argc, char *argv[]){
     // Print out config parameters based on vebosity level
     if(configParams.verboseLevel>=2){printParameters(configParams);}
     
-    tpxFileInfo = unpackandSortTPX3FileInSequentialBuffers(configParams);
+    //tpxFileInfo = unpackandSortTPX3FileInSequentialBuffers(configParams);
+    tpxFileInfo = unpackAndSortEntireTPX3File(configParams);
 
     auto hermesStopTime = std::chrono::high_resolution_clock::now();
     hermesTime = hermesStopTime - hermesStartTime;

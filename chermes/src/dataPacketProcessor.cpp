@@ -1,4 +1,5 @@
 // dataPacketProcessor.cpp
+#include <filesystem>
 
 #include "dataPacketProcessor.h"
 #include "structures.h"
@@ -11,6 +12,7 @@ const double NANOSECS = 1E-9;
 unsigned long long fileLength;
 unsigned long long NumofPackets;
 
+// TODO: Fix this! Possibly make it into a structure that is inherited 
 double coarseTime;
 unsigned long tmpfine;
 unsigned long trigTimeFine;
@@ -113,29 +115,98 @@ void processGlobalTimePacket(unsigned long long datapacket, signalData &signalDa
 
 }
 
-void unpackAndSortEntireTPX3File(configParameters configParams){
+tpx3FileDianostics unpackAndSortEntireTPX3File(configParameters configParams){
     
-    // Grab start time.
-    //auto startTime = std::chrono::high_resolution_clock::now(); 
-    
+    // allocate container for diagnositcs while unpacking. 
+    tpx3FileDianostics tpx3FileInfo; 
+
+    // Some buffer timing info for diagnostics
+    std::chrono::duration<double> bufferUnpackTime;
+    //std::chrono::duration<double> bufferSortTime;
+    //std::chrono::duration<double> bufferWriteTime;
+    //std::chrono::duration<double> bufferClusterTime;
+
     // Open the TPX3File
     std::string fullTpx3Path = configParams.rawTPX3Folder + "/" + configParams.rawTPX3File;
     std::cout << "Opening TPX3 file at path: " << configParams.rawTPX3File << std::endl;
     std::ifstream tpxFile(fullTpx3Path, std::ios::binary);
     if (!tpxFile) {throw std::runtime_error("Unable to open input TPX3 file at path: " + fullTpx3Path);}
 
-    // Determine length of file
-    tpxFile.seekg(0, tpxFile.end);  // Move the pointer to the end to find the file length
-    fileLength = tpxFile.tellg();   // Get the length of the file
-    tpxFile.seekg(0, tpxFile.beg);  // Move the pointer back to the beginning of the file for reading
+    // Using filesystem to get file size securely and handling large files
+    try {
+        tpx3FileInfo.filesize = std::filesystem::file_size(fullTpx3Path);
+        std::cout << "File size: " << tpx3FileInfo.filesize << std::endl;
+        tpx3FileInfo.numberOfDataPackets = tpx3FileInfo.filesize/8;
+        std::cout << "Number of Data Packets: " << tpx3FileInfo.numberOfDataPackets << std::endl;
 
-    if(configParams.verboseLevel >=1){
-        cout << "filesize: " << fileLength/(1024*1024) <<"MB" << endl;
+    } catch (std::filesystem::filesystem_error& e) {
+        std::cerr << "Error getting file size: " << e.what() << '\n';
+        return {}; // Return from your function or handle the error as needed
+    }    
+
+    // If writeRawSignals is true, attempt to create/open an output file for writing raw signals
+    ofstream rawSignalsFile;
+    if (configParams.writeRawSignals) {
+        std::string fullOutputPath = configParams.outputFolder + "/" + configParams.runHandle +".rawsignals";
+        rawSignalsFile.open(fullOutputPath, ios::out | ios::binary);
+        if (!rawSignalsFile) {
+            throw std::runtime_error("Unable to open output file!");
+        }
     }
 
+    // allocate an array for allSignalpackets, store all signals from the entire TPX3File, then close the TPX3 file.  
+    uint64_t* allSignalpackets = new uint64_t [tpx3FileInfo.numberOfDataPackets];
+    tpxFile.read((char*) allSignalpackets, tpx3FileInfo.filesize);
+    tpxFile.close();
+
+    
+    // Initiate an array of signalData called signalDataArray that is the same size as bufferSize//8
+    signalData* signalDataArray = new signalData[tpx3FileInfo.numberOfDataPackets];
+
+    auto startUnpackTime = std::chrono::high_resolution_clock::now(); // Grab a START time for unpacking
+    
+    char* chunkHeader = new char[8];
+    
+    uint64_t i = 0; // Initialize the counter outside the while loop
+    while (i < tpx3FileInfo.numberOfDataPackets) {
+        
+        // TODO: figure out if memcpy is needed. 
+        memcpy(chunkHeader, &allSignalpackets[i], 8); 
+        
+        if (chunkHeader[0] == 'T' && chunkHeader[1] == 'P' && chunkHeader[2] == 'X') {
+
+            // Grab the buffer (or chuck size)
+            int bufferSize = ((0xff & chunkHeader[7]) << 8) | (0xff & chunkHeader[6]);
+
+            // add to the number of buffers observed in the TPX3 file
+            ++tpx3FileInfo.numberOfBuffers; 
+
+            // TODO: figure out if these are needed. 
+            chipnr = chunkHeader[4];    // Grab chip number
+            mode = chunkHeader[5];      // Grab mode. 
+
+            // calculate the number of data packets in the buffer
+            int dataPacketsInBuffer = bufferSize/8;
+        }
+        i++; // Increment the counter at the end of the while loop
+    }
+
+    return tpx3FileInfo;
 } 
 
 
+/**
+ * @brief Unpcaked and processes TPX3 file buffer by buffer.
+ *
+ * This function function takes a HERMES defined structure configParameters
+ * and unpacks and processess signal data in a TPX3 file according to the 
+ * how the control parameters (defined in configParameters) 
+ *
+ * @param configParams a configParameters structure that contains all the control parameters
+ * for unpacking and processing TPX3 signals. 
+ * @return tpx3FileInfo a tpx3FileDianostics structure that contains all the diagnostic containers for
+ * unpacking and processing tpx3Files. 
+ */
 tpx3FileDianostics unpackandSortTPX3FileInSequentialBuffers(configParameters configParams){
     
     // initiate container for diagnositcs while unpacking. 
@@ -153,12 +224,11 @@ tpx3FileDianostics unpackandSortTPX3FileInSequentialBuffers(configParameters con
     std::ifstream tpxFile(fullTpx3Path, std::ios::binary);
     if (!tpxFile) {throw std::runtime_error("Unable to open input TPX3 file at path: " + fullTpx3Path);}
     
-
     // Determine length of file
-    tpxFile.seekg(0, tpxFile.end);      // Move the pointer to the end to find the file length
-    fileLength = tpxFile.tellg();       // Get the length of the file
-    tpxFile.seekg(0, tpxFile.beg);      // Move the pointer back to the beginning of the file for reading
-    tpx3FileInfo.filesize = fileLength; // Set filesize in diagnostic structure (to print out later)
+    tpxFile.seekg(0, tpxFile.end);                  // Move the pointer to the end to find the file length
+    tpx3FileInfo.filesize = tpxFile.tellg();        // Get the length of the file
+    tpxFile.seekg(0, tpxFile.beg);                  // Move the pointer back to the beginning of the file for reading
+    tpx3FileInfo.numberOfDataPackets = tpx3FileInfo.filesize/8;
 
     // If writeRawSignals is true, attempt to create/open an output file for writing raw signals
     ofstream rawSignalsFile;
@@ -174,7 +244,6 @@ tpx3FileDianostics unpackandSortTPX3FileInSequentialBuffers(configParameters con
 
     while(tpxFile.read(HeaderBuffer, 8)) {  
 
-
         // Read header buffer and check for TPX
         if (HeaderBuffer[0] == 'T' && HeaderBuffer[1] == 'P' && HeaderBuffer[2] == 'X') {
             int bufferSize = ((0xff & HeaderBuffer[7]) << 8) | (0xff & HeaderBuffer[6]);
@@ -187,7 +256,7 @@ tpx3FileDianostics unpackandSortTPX3FileInSequentialBuffers(configParameters con
             int dataPacketsInBuffer = bufferSize/8;
 
             // Initiate an array of datapackets that is the same size as bufferSize//8
-            unsigned long long* datapackets = new unsigned long long[dataPacketsInBuffer];
+            uint64_t* datapackets = new uint64_t[dataPacketsInBuffer];
 
             // Initiate an array of signalData called signalDataArray that is the same size as bufferSize//8
             signalData* signalDataArray = new signalData[dataPacketsInBuffer];

@@ -50,19 +50,7 @@ int main(int argc, char *argv[]){
     tpxFileInfo.totalHermesTime = hermesTime.count();
 
 
-    if(configParams.verboseLevel>=2){
-        std::cout << std::endl << "=============== Diagnostics ==============" << std::endl;
-        std::cout << "Total HERMES Time: " << tpxFileInfo.totalHermesTime << " seconds" << std::endl;
-        std::cout << "Total Unpacking Time: " << tpxFileInfo.totalUnpackingTime << " seconds" << std::endl;
-        std::cout << "Total Sorting Time: " << tpxFileInfo.totalSortingTime << " seconds" << std::endl;
-        std::cout << "Total Writing Time: " << tpxFileInfo.totalWritingTime << " seconds" << std::endl;
-        std::cout << "------------------------------------------" << std::endl;
-        std::cout << "Number of headers packets: " << tpxFileInfo.numberOfBuffers << std::endl;
-        std::cout << "Number of TDC packets: " << tpxFileInfo.numberOfTDC1s << std::endl;
-        std::cout << "Number of Pixels packets: " << tpxFileInfo.numberOfPixelHits << std::endl;
-        std::cout << "Number of Global Time stamp packets: " << tpxFileInfo.numberOfGTS << std::endl;
-        std::cout << "==========================================" << std::endl;
-    }
+    if(configParams.verboseLevel>=2){printOutUnpackingDiagnostics(configParams,tpxFileInfo);}
 
 	return 0;
 }

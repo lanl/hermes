@@ -42,7 +42,7 @@ struct tpx3FileDianostics {
     int32_t numberOfPixelHits = 0;      // number of pixel hits
     int32_t numberOfTDC1s = 0;          // number of TDC1 triggers
     int32_t numberOfTDC2s = 0;          // number of TDC2 triggers
-    int16_t numberOfGTS = 0;            // number of global time stamps.
+    int32_t numberOfGTS = 0;            // number of global time stamps.
 
     double totalHermesTime = 0;
     double totalUnpackingTime = 0;

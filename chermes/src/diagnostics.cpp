@@ -83,6 +83,6 @@ void printOutUnpackingDiagnostics(tpx3FileDianostics tpxFileInfo){
     std::cout << "Number of TDC packets: " << tpxFileInfo.numberOfTDC1s << std::endl;
     std::cout << "Number of Pixels packets: " << tpxFileInfo.numberOfPixelHits << std::endl;
     std::cout << "Number of Global Time stamp packets: " << tpxFileInfo.numberOfGTS << std::endl;
-    std::cout << "Number of Unprocess (mystery) packets: " << numberOfUnprocessedPackets << std::endl;
+    std::cout << "Number of Unprocessed (mystery) packets: " << numberOfUnprocessedPackets << std::endl;
     std::cout << "==========================================" << std::endl;
 }

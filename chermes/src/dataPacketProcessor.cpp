@@ -120,12 +120,6 @@ tpx3FileDianostics unpackAndSortEntireTPX3File(configParameters configParams){
     // allocate container for diagnositcs while unpacking. 
     tpx3FileDianostics tpx3FileInfo; 
 
-    // Some buffer timing info for diagnostics
-    //std::chrono::duration<double> bufferUnpackTime;
-    //std::chrono::duration<double> bufferSortTime;
-    //std::chrono::duration<double> bufferWriteTime;
-    //std::chrono::duration<double> bufferClusterTime;
-
     // Open the TPX3File
     std::string fullTpx3Path = configParams.rawTPX3Folder + "/" + configParams.rawTPX3File;
     std::cout << "Opening TPX3 file at path: " << configParams.rawTPX3File << std::endl;
@@ -174,29 +168,56 @@ tpx3FileDianostics unpackAndSortEntireTPX3File(configParameters configParams){
 
     uint64_t currentPacket = 0; // Initialize the counter outside the while loop
     while (currentPacket < tpx3FileInfo.numberOfDataPackets) {
-        // Extract the least significant 32 bits for the "TPX3" check
         uint32_t tpx3flag = static_cast<uint32_t>(allSignalpackets[currentPacket]);
 
-        // Check if the extracted part matches "TPX3"
         if (tpx3flag == tpx3Signature) {
-            
-            // Extracting chunk size from the packet
-            // Since the chunk size is in the 63 - 48 bits, we shift right by 48 bits
-            // and mask with 0xFFFF to get only the chunk size part.
             uint16_t chunkSize = static_cast<uint16_t>((allSignalpackets[currentPacket] >> 48) & 0xFFFF);
-            
-            // Calculating the number of packets in the chunk. Assuming the chunk size includes the header and each packet is 8 bytes,
-            uint16_t numPacketsInChunk = chunkSize / 8; 
+            uint16_t numPacketsInChunk = chunkSize / 8;
 
-            std::cout << "Buffer Number: " << tpx3FileInfo.numberOfBuffers << "\tNumber of packets: " << numPacketsInChunk << std::endl;
-            tpx3FileInfo.numberOfBuffers++; 
-        }
+            // Correctly iterate through each data packet in the current chunk
+            for (uint16_t chunkPacketIndex = 1; chunkPacketIndex < numPacketsInChunk; ++chunkPacketIndex) {
+                // Calculate the actual index of the current data packet within the entire array
+                uint64_t actualPacketIndex = currentPacket + chunkPacketIndex;
 
-        ++currentPacket;
+                // Safeguard against going beyond the allocated memory
+                if (actualPacketIndex >= tpx3FileInfo.numberOfDataPackets) break;
+
+                // Extract the packet type from the most significant nibble
+                uint8_t packetType = static_cast<uint8_t>((allSignalpackets[actualPacketIndex] >> 60) & 0xF);
+
+                switch (packetType) {
+                    case 0xa: // Integrated ToT mode
+                        // Process Integrated ToT mode packet
+                        std::cout << "WTF!!!" << std::endl;
+                        break;
+                    case 0xb: // Time of Arrival mode
+                        tpx3FileInfo.numberOfPixelHits++;
+                        break;
+                    case 0x6: // TDC data packets
+                        tpx3FileInfo.numberOfTDC1s++;
+                        break;
+                    case 0x4: // Global time data packets
+                        tpx3FileInfo.numberOfGTS++;
+                        break;
+                    // Add cases for other packet types as needed
+                    default:
+                        // Handle unknown or unsupported packet type
+                        std::cout << "WTF!!!" << std::endl;
+                        break;
+                }
+            }
+
+            // Move to the next chunk by skipping over the packets in the current chunk
+            currentPacket += numPacketsInChunk - 1; // -1 because the loop increment will add 1 more
+            tpx3FileInfo.numberOfBuffers++;
+        } 
     }
-    return tpx3FileInfo;
-} 
 
+    delete[] allSignalpackets; // Don't forget to free the allocated memory
+    delete[] signalDataArray;  // Assuming you're done with signalDataArray
+
+    return tpx3FileInfo;
+}
 
 /**
  * @brief Unpcaked and processes TPX3 file buffer by buffer.

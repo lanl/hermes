@@ -1,8 +1,9 @@
 #include <iomanip> // Include for std::setw and std::setprecision
 
-// User defined libraries
+// HERMES defined libraries
 #include "diagnostics.h"
 
+// TODO: Figure out if you still need these otherwise delete them.
 int numberOfHeaders = 0;
 int numberOfBuffers = 0;
 int numberOfTDCPackets = 0;
@@ -73,6 +74,7 @@ void printOutUnpackingDiagnostics(tpx3FileDianostics tpxFileInfo){
     std::cout << "Total HERMES Time: " << tpxFileInfo.totalHermesTime << " seconds" << std::endl;
     std::cout << "Total Unpacking Time: " << tpxFileInfo.totalUnpackingTime << " seconds" << std::endl;
     std::cout << "Total Sorting Time: " << tpxFileInfo.totalSortingTime << " seconds" << std::endl;
+    std::cout << "Total Clustering Time: " << tpxFileInfo.totalClusteringTime << " seconds" << std::endl;
     std::cout << "Total Writing Time: " << tpxFileInfo.totalWritingTime << " seconds" << std::endl;
     std::cout << "------------------------------------------" << std::endl;
     std::cout << "Number of headers packets: " << tpxFileInfo.numberOfBuffers << std::endl;

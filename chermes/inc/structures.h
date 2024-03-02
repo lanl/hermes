@@ -46,6 +46,7 @@ struct tpx3FileDianostics {
     double totalHermesTime = 0;
     double totalUnpackingTime = 0;
     double totalSortingTime = 0;
+    double totalClusteringTime = 0;
     double totalWritingTime = 0;
 };
 

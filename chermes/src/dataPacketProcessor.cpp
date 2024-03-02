@@ -1,8 +1,4 @@
 // dataPacketProcessor.cpp
-#include <stdio.h>
-#include <iostream>
-#include <fstream>
-#include <chrono>
 
 #include "dataPacketProcessor.h"
 #include "structures.h"
@@ -149,6 +145,7 @@ tpx3FileDianostics unpackandSortTPX3FileInSequentialBuffers(configParameters con
     std::chrono::duration<double> bufferUnpackTime;
     std::chrono::duration<double> bufferSortTime;
     std::chrono::duration<double> bufferWriteTime;
+    std::chrono::duration<double> bufferClusterTime;
 
     // Open the TPX3File
     std::string fullTpx3Path = configParams.rawTPX3Folder + "/" + configParams.rawTPX3File;
@@ -268,8 +265,12 @@ tpx3FileDianostics unpackandSortTPX3FileInSequentialBuffers(configParameters con
                 // Print message for each buffer if verboselevel = 3.
                 if (configParams.verboseLevel>=3) {std::cout <<"Buffer "<< tpx3FileInfo.numberOfBuffers << ": Clustering pixels based on DBSCAN " << std::endl;}
 
+                auto startClusterTime = std::chrono::high_resolution_clock::now();
                 // sort pixels into clusters (photons) using sorting algorith. 
                 ST_DBSCAN(configParams, signalDataArray, signalGroupID, dataPacketsInBuffer);
+                auto stopClusterTime = std::chrono::high_resolution_clock::now();
+                bufferClusterTime = stopClusterTime - startClusterTime;
+                tpx3FileInfo.totalClusteringTime = tpx3FileInfo.totalClusteringTime + bufferClusterTime.count();
             }
             
             //

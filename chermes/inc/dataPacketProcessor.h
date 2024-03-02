@@ -1,4 +1,12 @@
 // dataPacketProcessor.h
+#include <stdio.h>
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+#include <vector>
+#include <cstring>
+#include <stdint.h>
+#include <chrono>
 
 #ifndef DATAPACKETPROCESSOR_H
 #define DATAPACKETPROCESSOR_H

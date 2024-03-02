@@ -50,7 +50,7 @@ int main(int argc, char *argv[]){
     tpxFileInfo.totalHermesTime = hermesTime.count();
 
 
-    if(configParams.verboseLevel>=2){printOutUnpackingDiagnostics(configParams,tpxFileInfo);}
+    if(configParams.verboseLevel>=2){printOutUnpackingDiagnostics(tpxFileInfo);}
 
 	return 0;
 }

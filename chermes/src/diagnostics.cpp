@@ -19,11 +19,26 @@ std::string signalTypeToString(int signalType) {
     }
 }
 
-void printGroupIDs(int numberOfBuffers, signalData* signalDataArray, int16_t* signalGroupID, size_t dataPacketsInBuffer) {
+/**
+ * @brief Prints out group ID info for all data in a single TPX3 data buffer.
+ *
+ * This function function loops through the singalData and the corresponding signalGroupID arrays
+ * and prints out a table of signalType, xPixel, yPixel, ToaFinal, TotFinal, and groupID. 
+ * Here groupID is assigned from some sorting algorithm, such as DBSCAN. 
+ *
+ * TODO: Add a output file instead of printing to terminal. 
+ * 
+ * @param buffernNumber         the buffer number from which the singalData was taking from.
+ * @param signalDataArray       the array of raw signal data from a TPX3 file, such as pixelHit, TDCs, or global time stamps.
+ * @param signalGroupID         the corresponding sorted IDs for all the raw signal data.
+ * @param dataPacketsInBuffer   Number of data packets in buffer. 
+ * @return nothing
+ */
+void printGroupIDs(int buffernNumber, signalData* signalDataArray, int16_t* signalGroupID, size_t dataPacketsInBuffer) {
     // Loop through dataPacketsInBuffer and print out each field. 
     for (size_t i = 0; i < dataPacketsInBuffer; i++) {
         std::cout << std::left 
-                  << std::setw(6) << numberOfBuffers
+                  << std::setw(6) << buffernNumber
                   << std::setw(10) << signalTypeToString(static_cast<int>(signalDataArray[i].signalType))
                   << std::setw(8) << static_cast<int>(signalDataArray[i].xPixel)
                   << std::setw(8) << static_cast<int>(signalDataArray[i].yPixel)
@@ -34,7 +49,17 @@ void printGroupIDs(int numberOfBuffers, signalData* signalDataArray, int16_t* si
     }
 }
 
-void printOutUnpackingDiagnostics(configParameters configParams,tpx3FileDianostics tpxFileInfo){
+/**
+ * @brief Prints out all diagnostics for unpacking, sorting, and writingout data from a TPX3 file.
+ *
+ * This function function takes a HERMES defined structure tpx3FileDianostics
+ * and prints out most of the diagnostic info that might be desired in 
+ *
+ * @param tpxFileInfo a tpx3FileDianostics structure that contains all the diagnostic containers for
+ * unpacking and processing tpx3Files.
+ * @return nothing
+ */
+void printOutUnpackingDiagnostics(tpx3FileDianostics tpxFileInfo){
     std::cout << std::endl << "=============== Diagnostics ==============" << std::endl;
     std::cout << "Total HERMES Time: " << tpxFileInfo.totalHermesTime << " seconds" << std::endl;
     std::cout << "Total Unpacking Time: " << tpxFileInfo.totalUnpackingTime << " seconds" << std::endl;

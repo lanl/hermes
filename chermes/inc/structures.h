@@ -33,9 +33,20 @@ struct configParameters {
                                     // 3 = Buffer diagnostics
 };
 
-struct clusterInfo {
-    int multiplicity;
-    double timeDuration;
+// This structure is used to contain various dianostic info used during the unpacking processes (in dataPacketProcessor class)
+
+struct tpx3FileDianostics {
+    int16_t filesize = 0;           // size (in MBs) of tpx3 file
+    int32_t numberOfBuffers = 0;    // number of buffers 
+    int32_t numberOfPixelHits = 0;  // number of pixel hits
+    int32_t numberOfTDC1s = 0;      // number of TDC1 triggers
+    int32_t numberOfTDC2s = 0;      // number of TDC2 triggers
+    int16_t numberOfGTS = 0;        // number of global time stamps.
+
+    double totalHermesTime = 0;
+    double totalUnpackingTime = 0;
+    double totalSortingTime = 0;
+    double totalWritingTime = 0;
 };
 
 // Represents the data for a single raw signal.
@@ -53,6 +64,11 @@ struct photonData{
     float photon_y = 0;
     double photon_toa = 0;
     uint16_t integrated_tot = 0;
+};
+
+struct clusterInfo {
+    int multiplicity;
+    double timeDuration;
 };
 
 #endif

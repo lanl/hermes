@@ -120,7 +120,7 @@ void processGlobalTimePacket(unsigned long long datapacket, signalData &signalDa
 void unpackAndSortEntireTPX3File(configParameters configParams){
     
     // Grab start time.
-    auto startTime = std::chrono::high_resolution_clock::now(); 
+    //auto startTime = std::chrono::high_resolution_clock::now(); 
     
     // Open the TPX3File
     std::string fullTpx3Path = configParams.rawTPX3Folder + "/" + configParams.rawTPX3File;
@@ -140,23 +140,28 @@ void unpackAndSortEntireTPX3File(configParameters configParams){
 } 
 
 
-void unpackandSortTPX3FileInSequentialBuffers(configParameters configParams){
+tpx3FileDianostics unpackandSortTPX3FileInSequentialBuffers(configParameters configParams){
+    
+    // initiate container for diagnositcs while unpacking. 
+    tpx3FileDianostics tpx3FileInfo; 
 
-    auto startTime = std::chrono::high_resolution_clock::now(); 
+    // Some buffer timing info for diagnostics
+    std::chrono::duration<double> bufferUnpackTime;
+    std::chrono::duration<double> bufferSortTime;
+    std::chrono::duration<double> bufferWriteTime;
+
     // Open the TPX3File
     std::string fullTpx3Path = configParams.rawTPX3Folder + "/" + configParams.rawTPX3File;
     std::cout << "Opening TPX3 file at path: " << configParams.rawTPX3File << std::endl;
     std::ifstream tpxFile(fullTpx3Path, std::ios::binary);
     if (!tpxFile) {throw std::runtime_error("Unable to open input TPX3 file at path: " + fullTpx3Path);}
+    
 
     // Determine length of file
-    tpxFile.seekg(0, tpxFile.end);  // Move the pointer to the end to find the file length
-    fileLength = tpxFile.tellg();   // Get the length of the file
-    tpxFile.seekg(0, tpxFile.beg);  // Move the pointer back to the beginning of the file for reading
-    
-    if(configParams.verboseLevel >=1){
-        cout << "filesize: " << fileLength/(1024*1024) <<"MB" << endl;
-    }
+    tpxFile.seekg(0, tpxFile.end);      // Move the pointer to the end to find the file length
+    fileLength = tpxFile.tellg();       // Get the length of the file
+    tpxFile.seekg(0, tpxFile.beg);      // Move the pointer back to the beginning of the file for reading
+    tpx3FileInfo.filesize = fileLength; // Set filesize in diagnostic structure (to print out later)
 
     // If writeRawSignals is true, attempt to create/open an output file for writing raw signals
     ofstream rawSignalsFile;
@@ -170,12 +175,14 @@ void unpackandSortTPX3FileInSequentialBuffers(configParameters configParams){
 
     char* HeaderBuffer = new char[8];
 
-    while(tpxFile.read(HeaderBuffer, 8)) {  // Read header buffer
+    while(tpxFile.read(HeaderBuffer, 8)) {  
 
+
+        // Read header buffer and check for TPX
         if (HeaderBuffer[0] == 'T' && HeaderBuffer[1] == 'P' && HeaderBuffer[2] == 'X') {
             int bufferSize = ((0xff & HeaderBuffer[7]) << 8) | (0xff & HeaderBuffer[6]);
 
-            ++numberOfHeaders;
+            ++tpx3FileInfo.numberOfBuffers; 
             chipnr = HeaderBuffer[4];
             mode = HeaderBuffer[5];
 
@@ -193,6 +200,7 @@ void unpackandSortTPX3FileInSequentialBuffers(configParameters configParams){
             memset(signalGroupID, 0, dataPacketsInBuffer * sizeof(int16_t));
             
             // Read the data buffer
+            auto startUnpackTime = std::chrono::high_resolution_clock::now(); // Grab a START time for unpacking
             tpxFile.read((char*)datapackets, bufferSize);  
 
             // Process each data packet in buffer and update signalDataArray
@@ -203,54 +211,69 @@ void unpackandSortTPX3FileInSequentialBuffers(configParameters configParams){
 
                 switch (packetHeader){
                 case 0x6:
+                    //[TODO]: NEED to fix to account for 2 TDC signals!!
+                    // maybe have processTDCPacket return bool (if 0 -> TDC1, if 1 ->TDC2)
                     processTDCPacket(datapackets[j], signalDataArray[j]);
-                    ++numberOfTDCPackets;
+                    ++tpx3FileInfo.numberOfTDC1s;  
                     break;
                 case 0xb:
                     processPixelPacket(datapackets[j], signalDataArray[j]);
-                    ++numberOfPixelPackets;
+                    ++tpx3FileInfo.numberOfPixelHits;
                     break;
                 case 0x4:
                     processGlobalTimePacket(datapackets[j], signalDataArray[j]);
-                    ++numberOfGlobalTSPackets;
+                    ++tpx3FileInfo.numberOfGTS;
                     break;
                 default:
                     break;
-
                 }
-            
             }
-            if (params.sortSignals){
+
+            // Grab stop time, calculate buffer unpacking duration, and append to total unpacking time.
+            auto stopUnpackTime = std::chrono::high_resolution_clock::now(); // Grab a STOP time for unpacking
+            bufferUnpackTime = stopUnpackTime - startUnpackTime;
+            tpx3FileInfo.totalUnpackingTime = tpx3FileInfo.totalUnpackingTime + bufferUnpackTime.count();
+
+            // If sortSingnals is true then sort!! 
+            if (configParams.sortSignals){
+                auto startSortTime = std::chrono::high_resolution_clock::now(); // Grab a start time for sorting
+                
+                // Print info depending on verbosity level
+                if (configParams.verboseLevel>=3) {std::cout <<"Buffer "<< tpx3FileInfo.numberOfBuffers << ": Sorting raw signal data. " << std::endl;}
+
                 // Sort the signalDataArray based on ToaFinal
-                if (params.verboseLevel>=3) {
-                    std::cout <<"Buffer "<< numberOfBuffers<< ": Sorting raw signal data. " << std::endl;
-                }
                 std::sort(signalDataArray, signalDataArray + dataPacketsInBuffer,[](const signalData &a, const signalData &b) -> bool {return a.ToaFinal < b.ToaFinal;});
+                
+                // Grab stop time, calculate buffer sort duration, and append to total sorting time.
+                auto stopSortTime = std::chrono::high_resolution_clock::now();
+                bufferSortTime = stopSortTime - startSortTime;
+                tpx3FileInfo.totalSortingTime = tpx3FileInfo.totalSortingTime + bufferSortTime.count();
             }
 
-            if (params.writeRawSignals){
-                if (params.verboseLevel>=3) {
-                    std::cout <<"Buffer "<< numberOfBuffers<< ": Writing out raw signal data. " << std::endl;
-                }
-                if(params.writeRawSignals){
+            if (configParams.writeRawSignals){
+                if (configParams.verboseLevel>=3) {std::cout <<"Buffer "<< tpx3FileInfo.numberOfBuffers << ": Writing out raw signal data. " << std::endl;}
+                if(configParams.writeRawSignals){
+                    auto startWriteTime = std::chrono::high_resolution_clock::now(); // Grab a start time for writing
                     rawSignalsFile.write(reinterpret_cast<char*>(signalDataArray), sizeof(signalData) * dataPacketsInBuffer);
+                    // Grab stop time, calculate buffer sort duration, and append to total sorting time.
+                    auto stopWriteTime = std::chrono::high_resolution_clock::now();
+                    bufferWriteTime = stopWriteTime - startWriteTime;
+                    tpx3FileInfo.totalWritingTime = tpx3FileInfo.totalWritingTime + bufferWriteTime.count();
                 }
             }
 
             // If clustering is turned on then start grouping signals into photon events using Spatial-Temporal DBSCAN.
-            if (params.clusterPixels){
+            if (configParams.clusterPixels){
 
                 // Print message for each buffer if verboselevel = 3.
-                if (params.verboseLevel>=3) {
-                    std::cout <<"Buffer "<< numberOfBuffers<< ": Clustering pixels based on DBSCAN " << std::endl;
-                }
+                if (configParams.verboseLevel>=3) {std::cout <<"Buffer "<< tpx3FileInfo.numberOfBuffers << ": Clustering pixels based on DBSCAN " << std::endl;}
 
                 // sort pixels into clusters (photons) using sorting algorith. 
-                ST_DBSCAN(params, signalDataArray, signalGroupID, dataPacketsInBuffer);
+                ST_DBSCAN(configParams, signalDataArray, signalGroupID, dataPacketsInBuffer);
             }
             
             //
-            if(params.maxBuffersToRead < 250 && params.maxBuffersToRead != 0){
+            if(configParams.maxBuffersToRead < 250 && configParams.maxBuffersToRead != 0){
                 //printGroupIDs(numberOfBuffers,signalDataArray,signalGroupID,dataPacketsInBuffer);
             }
 
@@ -260,16 +283,15 @@ void unpackandSortTPX3FileInSequentialBuffers(configParameters configParams){
         }
         
         // Increment and check buffer count against the limit if it's non-zero
-        if (params.maxBuffersToRead > 0 && ++numberOfBuffers >= params.maxBuffersToRead) {
-            if (params.verboseLevel>=2) {
-                std::cout << "Limit of " << params.maxBuffersToRead << " buffers reached, stopping processing." << std::endl;
+        if (configParams.maxBuffersToRead > 0 && ++tpx3FileInfo.numberOfBuffers >= configParams.maxBuffersToRead) {
+            if (configParams.verboseLevel>=2) {
+                std::cout << "Limit of " << configParams.maxBuffersToRead << " buffers reached, stopping processing." << std::endl;
             }
             break; // Exit loop if limit reached
         }
+
+        
     }
-
-
-
 
     // Close the TPX3File and print message depending on verbose level. 
     if(configParams.verboseLevel>=1){std::cout << "Closing TPX3 file: "<< configParams.rawTPX3File << std::endl;}
@@ -281,6 +303,7 @@ void unpackandSortTPX3FileInSequentialBuffers(configParameters configParams){
         rawSignalsFile.close();
     }
 
+    return tpx3FileInfo;
 }
 
 

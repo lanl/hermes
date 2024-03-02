@@ -4,6 +4,7 @@
 #define DATAPACKETPROCESSOR_H
 
 #include "structures.h"
+#include "photonRecon.h"
 
 // Processes a TDC packet and updates the provided signalData structure.
 void processTDCPacket(unsigned long long datapacket, signalData &signalData);
@@ -15,10 +16,11 @@ void processPixelPacket(unsigned long long datapacket, signalData &signalData);
 void processGlobalTimePacket(unsigned long long datapacket, signalData &signalData);
 
 // Unpack and process entire TPX3File
-void unpackAndSortEntireTPX3File(configParameters configParams)
+void unpackAndSortEntireTPX3File(configParameters configParams);
 
 // Unpack and process TPX3Files buffer by buffer
-void unpackandSortTPX3FileInSequentialBuffers(configParameters configParams);
+tpx3FileDianostics unpackandSortTPX3FileInSequentialBuffers(configParameters configParams);
+
 
 #endif
 

@@ -14,10 +14,10 @@ buffer_number = args.buffer_number  # Use the buffer number passed from command 
 plotter = ph_plotter.PlotPixelsInSingeBuffer_3D(file_path, buffer_number)
 
 # For plotting single plots
-plotter.plot_pixels_vs_toa()
-plt.show()
-plotter.generate_buffer_image(log=True)
-plt.show()
+#plotter.plot_pixels_vs_toa()
+#plt.show()
+#plotter.generate_buffer_image(log=True)
+#plt.show()
 
 # For combined plotting you need to first set up the figure and axes.
 fig3 = plt.figure(figsize=(14, 7))              # Setup figure with layout (side-by-side)

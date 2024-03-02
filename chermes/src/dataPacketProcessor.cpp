@@ -121,7 +121,7 @@ tpx3FileDianostics unpackAndSortEntireTPX3File(configParameters configParams){
     tpx3FileDianostics tpx3FileInfo; 
 
     // Some buffer timing info for diagnostics
-    std::chrono::duration<double> bufferUnpackTime;
+    //std::chrono::duration<double> bufferUnpackTime;
     //std::chrono::duration<double> bufferSortTime;
     //std::chrono::duration<double> bufferWriteTime;
     //std::chrono::duration<double> bufferClusterTime;
@@ -135,9 +135,11 @@ tpx3FileDianostics unpackAndSortEntireTPX3File(configParameters configParams){
     // Using filesystem to get file size securely and handling large files
     try {
         tpx3FileInfo.filesize = std::filesystem::file_size(fullTpx3Path);
-        std::cout << "File size: " << tpx3FileInfo.filesize << std::endl;
         tpx3FileInfo.numberOfDataPackets = tpx3FileInfo.filesize/8;
-        std::cout << "Number of Data Packets: " << tpx3FileInfo.numberOfDataPackets << std::endl;
+        if (configParams.verboseLevel>=2) {
+            std::cout << "File size: " << tpx3FileInfo.filesize << std::endl;
+            std::cout << "Number of Data Packets: " << tpx3FileInfo.numberOfDataPackets << std::endl;
+        }
 
     } catch (std::filesystem::filesystem_error& e) {
         std::cerr << "Error getting file size: " << e.what() << '\n';
@@ -163,34 +165,35 @@ tpx3FileDianostics unpackAndSortEntireTPX3File(configParameters configParams){
     // Initiate an array of signalData called signalDataArray that is the same size as bufferSize//8
     signalData* signalDataArray = new signalData[tpx3FileInfo.numberOfDataPackets];
 
-    auto startUnpackTime = std::chrono::high_resolution_clock::now(); // Grab a START time for unpacking
+    //auto startUnpackTime = std::chrono::high_resolution_clock::now(); // Grab a START time for unpacking
     
-    char* chunkHeader = new char[8];
-    
-    uint64_t i = 0; // Initialize the counter outside the while loop
-    while (i < tpx3FileInfo.numberOfDataPackets) {
-        
-        // TODO: figure out if memcpy is needed. 
-        memcpy(chunkHeader, &allSignalpackets[i], 8); 
-        
-        if (chunkHeader[0] == 'T' && chunkHeader[1] == 'P' && chunkHeader[2] == 'X') {
+    // Convert "TPX3" string to uint32_t in little endian format
+    const char tpx3SignatureStr[] = "TPX3";
+    uint32_t tpx3Signature;
+    memcpy(&tpx3Signature, tpx3SignatureStr, sizeof(uint32_t));
 
-            // Grab the buffer (or chuck size)
-            int bufferSize = ((0xff & chunkHeader[7]) << 8) | (0xff & chunkHeader[6]);
+    uint64_t currentPacket = 0; // Initialize the counter outside the while loop
+    while (currentPacket < tpx3FileInfo.numberOfDataPackets) {
+        // Extract the least significant 32 bits for the "TPX3" check
+        uint32_t tpx3flag = static_cast<uint32_t>(allSignalpackets[currentPacket]);
 
-            // add to the number of buffers observed in the TPX3 file
-            ++tpx3FileInfo.numberOfBuffers; 
+        // Check if the extracted part matches "TPX3"
+        if (tpx3flag == tpx3Signature) {
+            
+            // Extracting chunk size from the packet
+            // Since the chunk size is in the 63 - 48 bits, we shift right by 48 bits
+            // and mask with 0xFFFF to get only the chunk size part.
+            uint16_t chunkSize = static_cast<uint16_t>((allSignalpackets[currentPacket] >> 48) & 0xFFFF);
+            
+            // Calculating the number of packets in the chunk. Assuming the chunk size includes the header and each packet is 8 bytes,
+            uint16_t numPacketsInChunk = chunkSize / 8; 
 
-            // TODO: figure out if these are needed. 
-            chipnr = chunkHeader[4];    // Grab chip number
-            mode = chunkHeader[5];      // Grab mode. 
-
-            // calculate the number of data packets in the buffer
-            int dataPacketsInBuffer = bufferSize/8;
+            std::cout << "Buffer Number: " << tpx3FileInfo.numberOfBuffers << "\tNumber of packets: " << numPacketsInChunk << std::endl;
+            tpx3FileInfo.numberOfBuffers++; 
         }
-        i++; // Increment the counter at the end of the while loop
-    }
 
+        ++currentPacket;
+    }
     return tpx3FileInfo;
 } 
 

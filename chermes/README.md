@@ -1,4 +1,3 @@
--Makefile
 -inc/
 	|-dataPacketProcessor.h
 	|-diagnostics.h

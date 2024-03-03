@@ -32,8 +32,9 @@ std::vector<size_t> regionQuery(signalData* signalDataArray, size_t pIndex, doub
 }
 
 // Expands the cluster by adding reachable points based on spatial and temporal thresholds.
-void expandCluster(configParameters config, signalData* signalDataArray, int16_t* signalGroupID, size_t pIndex, std::vector<size_t>& neighbors, int clusterId, size_t dataPacketsInBuffer, photonData& pd) {
+void expandCluster(configParameters config, signalData* signalDataArray, int32_t* signalGroupID, size_t pIndex, std::vector<size_t>& neighbors, int clusterId, size_t dataPacketsInBuffer, photonData& pd) {
     
+    std::cout << "expanding cluster: " << clusterId << std::endl;
     signalGroupID[pIndex] = clusterId;
     
     // Initialize weighted sums with  initial point in the calculations
@@ -71,7 +72,7 @@ void expandCluster(configParameters config, signalData* signalDataArray, int16_t
 
 // Implements the ST_DBSCAN clustering algorithm. 
 // It segregates data points into clusters based on spatial and temporal closeness.
-void ST_DBSCAN(configParameters config, signalData* signalDataArray, int16_t* signalGroupID, size_t dataPacketsInBuffer) {
+void ST_DBSCAN(configParameters config, signalData* signalDataArray, int32_t* signalGroupID, size_t dataPacketsInBuffer) {
     
     int clusterId = 0;
     // Initiate vector of photonData called photons.

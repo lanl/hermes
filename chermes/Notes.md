@@ -1,5 +1,3 @@
-
-
 ** TPX3 raw file format **
 Taken from SERVAL manual V3.2
 Raw binary TPX3 files recorded by SPIDR readout boards have the following header/buffer structures. 
@@ -31,6 +29,12 @@ Pixel data packets (0xa, 0xb) format:
     19 – 16 bit     FToA (-1.5625ns)
     15 – 0 bit      SPIDR time (0.4096ms)
 
+    Notes: 
+        Max ToA time 0.409575 milliseconds 
+        Max ToT time is 0.025575 milliseconds
+        Max FToA time is -23.4375 ns
+        Max SPIDR time is 26.8435456 seconds
+
 TDC data packets (0x6) format:
     63 - 60 bit     0x6
     59 – 56 bit     0xf = TDC1 Rise, 0xa = TDC1 Fall, 0xe = TDC2 Rise, 0xb = TDC2 Fall
@@ -43,14 +47,26 @@ Global time data packets (0x4)
     For Global "time-low" packet 
     63 - 56 bit     0x44 = Time Low
     55 – 48 bit     Reserved
-    47– 16 bit      Timestamp (25ns)
+    47– 16 bit      TimeStampLow (25ns)
     15 – 0 bit      SPIDR time (0.4096ms)
+
+    Note:
+        I think you can set the fequency for spitting out global timestamps 
+        in the detector_config_json_data with Serval.
+        Timing info:
+            - TimeStampLow max value: 107.374182 seconds
+            - Max SPIDR time is 26.8435456 seconds
 
     For Global "time-high" packet 
     63 - 56 bit     0x45 = Time High
     55 – 32 bit     Reserved
-    31 – 16 bit     Timestamp (107.374182s)
+    31 – 16 bit     TimeStampHigh (107.374182s)
     15 – 0 bit      SPIDR time (0.4096ms)
+
+    Notes: 
+        - TimeStampHigh max value: 7036767.01737
+        - Max SPIDR time is 26.8435456 seconds
+
 
 SPIDR control packets (0x5) format:
     For Packet ID 

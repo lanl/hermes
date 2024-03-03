@@ -1,7 +1,7 @@
 # Compiler and flags
 CXX = g++
 CFLAGS = -Wall -O2
-CXXFLAGS = $(CFLAGS) -Iinc -std=c++11
+CXXFLAGS = $(CFLAGS) -Iinc -std=c++17
 
 # Check if the directory exists and CHERMES_DIR is set
 ifeq ($(CHERMES_DIR),)

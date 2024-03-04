@@ -459,9 +459,7 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
  * and updates the corresponding signal data structure. 
  *
  * This function takes the data packet pass through unsigned long long datapacket and processes the timing of 
- * the Global Time Stamp hit. It then update the corresponding signalData structure, which is passed by refference. 
- * 
- * TODO: I need to rewrite this for clarity. Also need to figure out logic for time stamps.  
+ * the Global Time Stamp hit. It then update the corresponding signalData structure, which is passed by refference.  
  * 
  * @param datapacket     64 btye data packet that contains raw timing info
  * @param signalData    HERMES defined structure that contain raw data info from data packets.
@@ -497,11 +495,8 @@ tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams){
 
     processDataPackets(configParams, tpx3FileInfo,  allTpx3Datapackets, signalDataArray, tpx3FileInfo.numberOfDataPackets);
 
-    // If sortSingnals is true then sort!! 
-    if (configParams.sortSignals){sortSignals(configParams, signalDataArray, tpx3FileInfo);}
-    // If writeRawSignals is true then write out binary
-    if (configParams.writeRawSignals){writeRawSignals(configParams, rawSignalsFile, signalDataArray, tpx3FileInfo);}
-    // If clustering is turned on then start grouping signals into photon events using Spatial-Temporal DBSCAN.
+    if (configParams.sortSignals){sortSignals(configParams, signalDataArray, tpx3FileInfo);}        // If sortSingnals is true then sort!! 
+    if (configParams.writeRawSignals){writeRawSignals(configParams, rawSignalsFile, signalDataArray, tpx3FileInfo);}    // If writeRawSignals is true then write out binary
     if (configParams.clusterPixels){clusterSignals(configParams, signalDataArray, tpx3FileInfo.numberOfDataPackets, tpx3FileInfo);}
 
     delete[] allTpx3Datapackets;    // Don't forget to free the allocated memory

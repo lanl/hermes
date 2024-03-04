@@ -106,7 +106,7 @@ void clusterSignals(const configParameters& configParams, signalData* signalData
     auto startClusterTime = std::chrono::high_resolution_clock::now();
     
     // Invoke the clustering algorithm.
-    ST_DBSCAN(configParams, signalDataArray, tpx3FileInfo);
+    ST_DBSCAN(configParams, tpx3FileInfo, signalDataArray);
 
     auto stopClusterTime = std::chrono::high_resolution_clock::now();
     auto bufferClusterTime = std::chrono::duration_cast<std::chrono::milliseconds>(stopClusterTime - startClusterTime).count();

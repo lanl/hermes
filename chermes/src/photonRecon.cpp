@@ -34,7 +34,6 @@ std::vector<size_t> regionQuery(signalData* signalDataArray, size_t pIndex, doub
 // Expands the cluster by adding reachable points based on spatial and temporal thresholds.
 void expandCluster(configParameters config, signalData* signalDataArray, int32_t* signalGroupID, size_t pIndex, std::vector<size_t>& neighbors, int clusterId, size_t dataPacketsInBuffer, photonData& pd) {
     
-    std::cout << "expanding cluster: " << clusterId << std::endl;
     signalGroupID[pIndex] = clusterId;
     
     // Initialize weighted sums with  initial point in the calculations

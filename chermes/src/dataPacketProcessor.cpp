@@ -1,5 +1,7 @@
 // dataPacketProcessor.cpp
 #include <filesystem>
+#include <algorithm>
+
 
 #include "dataPacketProcessor.h"
 #include "structures.h"
@@ -48,6 +50,109 @@ std::chrono::duration<double> bufferSortTime;
 std::chrono::duration<double> bufferWriteTime;
 std::chrono::duration<double> bufferClusterTime;
 
+
+/**
+ * @brief Opens a TPX3 file, calculates file size and number of data packets, updates diagnostic information, and returns an ifstream object.
+ *
+ * This function constructs the full path to a TPX3 file using the `configParameters` structure provided in `config`. 
+ * It attempts to open the specified TPX3 file in binary mode. Upon successfully opening the file, it utilizes the filesystem 
+ * library to securely obtain the file's size. It then calculates the number of data packets in the TPX3 file based on 
+ * the file size and updates the `tpx3FileDiagnostics` structure `tpx3FileInfo` with this information. The function outputs 
+ * relevant information to the console, depending on the verbosity level specified in `config`. If the file cannot be opened 
+ * or if there is an error obtaining the file size, the function handles these errors appropriately by either throwing a runtime_error 
+ * exception or closing the file and rethrowing the exception to ensure clean error handling and resource management. 
+ * Finally, it returns the ifstream object associated with the opened file, allowing for further processing.
+ *
+ * @param config       The `configParameters` structure that holds control parameters for the operation, 
+ * including the directory and filename of the TPX3 file, and the verbosity level for logging.
+ * @param tpx3FileInfo A reference to a `tpx3FileDiagnostics` structure that will be updated with the file 
+ * size and number of data packets. This structure should be used later for diagnostics and processing information.
+ * @return std::ifstream An ifstream object associated with the opened TPX3 file. This object is used for subsequent file reading operations.
+ * @throws std::runtime_error if the TPX3 file cannot be opened or if there is an error obtaining the file size.
+ */
+std::ifstream openTPX3File(const configParameters& config, tpx3FileDiagnostics& tpx3FileInfo) {
+    // Construct the full path to the TPX3 file
+    std::string fullTpx3Path = config.rawTPX3Folder + "/" + config.rawTPX3File;
+    std::cout << "Opening TPX3 file at path: " << fullTpx3Path << std::endl;
+    
+    // Attempt to open the TPX3 file
+    std::ifstream tpx3File(fullTpx3Path, std::ios::binary);
+    
+    // Check if the file stream is in a good state (i.e., the file has been successfully opened)
+    if (!tpx3File) {
+        // If the file cannot be opened, throw an exception
+        throw std::runtime_error("Unable to open input TPX3 file at path: " + fullTpx3Path);
+    }
+
+    // Using filesystem to get file size securely and handling large files
+    try {
+        tpx3FileInfo.filesize = std::filesystem::file_size(fullTpx3Path);
+        tpx3FileInfo.numberOfDataPackets = tpx3FileInfo.filesize / 8;
+        if (config.verboseLevel >= 2) {
+            std::cout << "File size: " << tpx3FileInfo.filesize << " bytes" << std::endl;
+            std::cout << "Number of Data Packets: " << tpx3FileInfo.numberOfDataPackets << std::endl;
+        }
+    } catch (std::filesystem::filesystem_error& e) {
+        std::cerr << "Error getting file size: " << e.what() << '\n';
+        // Properly handle the error, such as by closing the file and rethrowing the exception
+        tpx3File.close();
+        throw;
+    }
+    
+    return tpx3File; // Return the ifstream object associated with the opened file
+}
+
+/**
+ * @brief Opens an output file for raw signals based on configuration parameters.
+ *
+ * If the writeRawSignals flag within the configParameters structure is set to true, this function constructs
+ * the full path to the output file using the outputFolder and runHandle specified in config. It then attempts
+ * to open this file for binary output. If the file is successfully opened, it returns an ofstream object
+ * associated with the file. If writeRawSignals is false or the file cannot be opened, it handles the
+ * situation appropriately, either by not attempting to open the file or by throwing an exception.
+ *
+ * @param config         The configParameters structure containing the output file configuration, including
+ *                       the output folder, run handle, and the flag indicating whether to write raw signals.
+ * @return std::ofstream An ofstream object for the output file. If writeRawSignals is false, this ofstream
+ *                       may not be opened (check with is_open() before using).
+ * @throws std::runtime_error If the file cannot be opened when writeRawSignals is true.
+ */
+std::ofstream openRawSignalsOutputFile(const configParameters& config) {
+    std::ofstream rawSignalsFile;
+
+    // Check if writing raw signals is enabled
+    if (config.writeRawSignals) {
+        // Construct the full path to the output file
+        std::string fullOutputPath = config.outputFolder + "/" + config.runHandle + ".rawsignals";
+        std::cout << "Opening output file for raw signals at path: " << fullOutputPath << std::endl;
+
+        // Attempt to open the output file
+        rawSignalsFile.open(fullOutputPath, std::ios::out | std::ios::binary);
+
+        // Check if the file stream is in a good state (i.e., the file has been successfully opened)
+        if (!rawSignalsFile) {
+            // If the file cannot be opened, throw an exception
+            throw std::runtime_error("Unable to open output file for raw signals at path: " + fullOutputPath);
+        }
+    } else {
+        std::cout << "Writing raw signals is disabled." << std::endl;
+    }
+
+    // Return the ofstream object associated with the opened file
+    // Note: If writing is disabled, this returns an unopened ofstream, which the caller needs to check
+    return rawSignalsFile;
+}
+
+/**
+ * @brief Takes a TDC data packet from a tpx3 file, processes it, and updates the corresponding signal data structure. 
+ *
+ * This function takes the data packet pass through unsigned long long datapacket and processes the timing of 
+ * the TDC trigger. It then update the corresponding signalData structure, which is passed by refference. 
+ * 
+ * @param datapacket     64 btye data packet that contains raw timing info
+ * @param signalData    HERMES defined structure that contain raw data info from data packets.
+ * @return nothing
+ */
 void processTDCPacket(unsigned long long datapacket, signalData &signalData) {
     // Logic for TDC packet
 
@@ -63,14 +168,22 @@ void processTDCPacket(unsigned long long datapacket, signalData &signalData) {
 	signalData.yPixel = 0;
 	signalData.ToaFinal = coarseTime*25*NANOSECS + trigTimeFine*timeUnit*NANOSECS;
 	signalData.TotFinal = 0;
-
 }
 
-// TODO: I need to rewrite this for clarity. 
-void processPixelPacket(unsigned long long datapacket, signalData &signalData) {
-    // Logic for Pixel packet
-    //cout << "Pixel packet" << endl;
 
+/**
+ * @brief Takes a Pixel data packet from a tpx3 file, processes it, and updates the corresponding signal data structure. 
+ *
+ * This function takes the data packet pass through unsigned long long datapacket and processes the timing and position of 
+ * the Pixel hit. It then update the corresponding signalData structure, which is passed by refference. 
+ * 
+ * TODO: I need to rewrite this for clarity. 
+ * 
+ * @param datapacket     64 btye data packet that contains raw timing info
+ * @param signalData    HERMES defined structure that contain raw data info from data packets.
+ * @return nothing
+ */ 
+void processPixelPacket(unsigned long long datapacket, signalData &signalData) {
     // Unpack datapacket
     spidrTime = (unsigned short)(datapacket & 0xffff);
     dcol = (datapacket & 0x0FE0000000000000L) >> 52;                                                                  
@@ -95,7 +208,20 @@ void processPixelPacket(unsigned long long datapacket, signalData &signalData) {
 	signalData.TotFinal = timeOverThresholdNS;
 }
 
-// TODO: I need to rewrite this for clarity. Also need to figure out logic for time stamps. 
+
+/**
+ * @brief Takes a Global Time Stamp data packet from a tpx3 file, processes it, 
+ * and updates the corresponding signal data structure. 
+ *
+ * This function takes the data packet pass through unsigned long long datapacket and processes the timing of 
+ * the Global Time Stamp hit. It then update the corresponding signalData structure, which is passed by refference. 
+ * 
+ * TODO: I need to rewrite this for clarity. Also need to figure out logic for time stamps.  
+ * 
+ * @param datapacket     64 btye data packet that contains raw timing info
+ * @param signalData    HERMES defined structure that contain raw data info from data packets.
+ * @return nothing
+ */ 
 void processGlobalTimePacket(uint64_t datapacket, signalData &signalData) {
     // Logic for Global time packet
     uint8_t timeType = static_cast<uint8_t>((datapacket >> 56) & 0xFF);                        
@@ -122,57 +248,79 @@ void processGlobalTimePacket(uint64_t datapacket, signalData &signalData) {
 	
 }
 
-tpx3FileDianostics unpackAndSortEntireTPX3File(configParameters configParams){
-    
-    // allocate container for diagnositcs while unpacking. 
-    tpx3FileDianostics tpx3FileInfo; 
 
-    // Open the TPX3File
-    std::string fullTpx3Path = configParams.rawTPX3Folder + "/" + configParams.rawTPX3File;
-    std::cout << "Opening TPX3 file at path: " << configParams.rawTPX3File << std::endl;
-    std::ifstream tpxFile(fullTpx3Path, std::ios::binary);
-    if (!tpxFile) {throw std::runtime_error("Unable to open input TPX3 file at path: " + fullTpx3Path);}
+void processDataPackets(const configParameters& config, tpx3FileDiagnostics& tpx3FileInfo, const uint64_t* packets, signalData* signalDataArray, size_t numPackets) {
+    for (size_t i = 0; i < numPackets; ++i) {
+        // Extract packet type or other identifying information
+        uint8_t packetType = extractPacketType(packets[i]);
 
-    // Using filesystem to get file size securely and handling large files
-    try {
-        tpx3FileInfo.filesize = std::filesystem::file_size(fullTpx3Path);
-        tpx3FileInfo.numberOfDataPackets = tpx3FileInfo.filesize/8;
-        if (configParams.verboseLevel>=2) {
-            std::cout << "File size: " << tpx3FileInfo.filesize << std::endl;
-            std::cout << "Number of Data Packets: " << tpx3FileInfo.numberOfDataPackets << std::endl;
-        }
-
-    } catch (std::filesystem::filesystem_error& e) {
-        std::cerr << "Error getting file size: " << e.what() << '\n';
-        return {}; // Return from your function or handle the error as needed
-    }    
-
-    // If writeRawSignals is true, attempt to create/open an output file for writing raw signals
-    ofstream rawSignalsFile;
-    if (configParams.writeRawSignals) {
-        std::string fullOutputPath = configParams.outputFolder + "/" + configParams.runHandle +".rawsignals";
-        rawSignalsFile.open(fullOutputPath, ios::out | ios::binary);
-        if (!rawSignalsFile) {
-            throw std::runtime_error("Unable to open output file!");
+        switch (packetType) {
+            case PACKET_TYPE_PIXEL_HIT:
+                // Process a pixel hit packet
+                processPixelPacket(packets[i], signalDataArray[i], tpx3FileInfo);
+                break;
+            case PACKET_TYPE_TDC_HIT:
+                // Process a TDC hit packet
+                processTDCPacket(packets[i], signalDataArray[i], tpx3FileInfo);
+                break;
+            // Add cases for other packet types as necessary
+            default:
+                std::cerr << "Unknown packet type encountered: " << static_cast<unsigned>(packetType) << std::endl;
+                // Handle unknown packet type, if necessary
+                break;
         }
     }
 
-    // allocate an array for allSignalpackets, store all signals from the entire TPX3File, then close the TPX3 file.  
-    uint64_t* allSignalpackets = new uint64_t [tpx3FileInfo.numberOfDataPackets];
-    tpxFile.read((char*) allSignalpackets, tpx3FileInfo.filesize);
-    tpxFile.close();
+    // Optionally, update tpx3FileInfo based on processed data
+    updateDiagnostics(tpx3FileInfo, ...);
+}
 
+
+/**
+ * @brief Takes a Global Time Stamp data packet from a tpx3 file, processes it, 
+ * and updates the corresponding signal data structure. 
+ *
+ * This function takes the data packet pass through unsigned long long datapacket and processes the timing of 
+ * the Global Time Stamp hit. It then update the corresponding signalData structure, which is passed by refference. 
+ * 
+ * TODO: I need to rewrite this for clarity. Also need to figure out logic for time stamps.  
+ * 
+ * @param datapacket     64 btye data packet that contains raw timing info
+ * @param signalData    HERMES defined structure that contain raw data info from data packets.
+ * @return nothing
+ */ 
+tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams){
     
+    std::ifstream tpx3File;             // initiate a input filestream for reading in TPX3file
+    std::ofstream rawSignalsFile;       // initiate a output filestream for writing raw data
+    tpx3FileDiagnostics tpx3FileInfo;    // initiate container for diagnositcs while unpacking.
+
+    // Open the TPX3File
+    try {tpx3File = openTPX3File(configParams,tpx3FileInfo);} 
+    catch (const std::runtime_error& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return {};  // Handle the error as needed, possibly returning an error code or an empty object
+    }  
+
+    // If writeRawSignals is true, Attempt to open the output file for raw signals, if configured to do so
+    try {rawSignalsFile = openRawSignalsOutputFile(configParams);} 
+    catch (const std::runtime_error& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return {}; // Handle the erroras needed, possibly returning an error code or an empty object
+    }
+
+    // allocate an array for allTpx3Datapackets, store all signals from the entire TPX3File, then close the TPX3 file.  
+    uint64_t* allTpx3Datapackets = new uint64_t [tpx3FileInfo.numberOfDataPackets];
+    tpx3File.read((char*) allTpx3Datapackets, tpx3FileInfo.filesize);
+    tpx3File.close();
+
     // Initiate an array of signalData called signalDataArray that is the same size as bufferSize//8
     signalData* signalDataArray = new signalData[tpx3FileInfo.numberOfDataPackets];
-
-    // Initiate an array of group ID that is the same size 
-    int32_t* signalGroupID = new int32_t[tpx3FileInfo.numberOfDataPackets];
-    memset(signalGroupID, 0, tpx3FileInfo.numberOfDataPackets * sizeof(int32_t));
 
     // Grab a START time for unpacking
     auto startUnpackTime = std::chrono::high_resolution_clock::now(); 
     
+
     // Convert "TPX3" string to uint32_t in little endian format
     const char tpx3SignatureStr[] = "TPX3";
     uint32_t tpx3Signature;
@@ -183,13 +331,13 @@ tpx3FileDianostics unpackAndSortEntireTPX3File(configParameters configParams){
     // Continue to loop through datapacket array until you hit the numberOfDataPackets 
     while (currentPacket < tpx3FileInfo.numberOfDataPackets) {
         // Grab last 32 bits of current packt
-        uint32_t tpx3flag = static_cast<uint32_t>(allSignalpackets[currentPacket]);
+        uint32_t tpx3flag = static_cast<uint32_t>(allTpx3Datapackets[currentPacket]);
 
         // If tpx3flag matches the "TPX3" then you found a chuck header
         if (tpx3flag == tpx3Signature) {
 
             // Start processing the chuck header to get size and number of data packets in chuck. 
-            uint16_t chunkSize = static_cast<uint16_t>((allSignalpackets[currentPacket] >> 48) & 0xFFFF);
+            uint16_t chunkSize = static_cast<uint16_t>((allTpx3Datapackets[currentPacket] >> 48) & 0xFFFF);
             uint16_t numPacketsInChunk = chunkSize / 8;
 
             // Iterate through each data packet in the current chunk
@@ -201,7 +349,7 @@ tpx3FileDianostics unpackAndSortEntireTPX3File(configParameters configParams){
                 if (actualPacketIndex >= tpx3FileInfo.numberOfDataPackets) break;
 
                 // Extract the packet type from the most significant nibble
-                uint8_t packetType = static_cast<uint8_t>((allSignalpackets[actualPacketIndex] >> 60) & 0xF);
+                uint8_t packetType = static_cast<uint8_t>((allTpx3Datapackets[actualPacketIndex] >> 60) & 0xF);
 
                 switch (packetType) {
                     case 0xA: // Integrated ToT mode
@@ -209,21 +357,21 @@ tpx3FileDianostics unpackAndSortEntireTPX3File(configParameters configParams){
                         std::cout << "Integrated ToT mode packet detected." << std::endl;
                         break;
                     case 0xB: // Time of Arrival mode
-                        processPixelPacket(allSignalpackets[actualPacketIndex], signalDataArray[actualPacketIndex]);
+                        processPixelPacket(allTpx3Datapackets[actualPacketIndex], signalDataArray[actualPacketIndex]);
                         tpx3FileInfo.numberOfPixelHits++;
                         break;
                     case 0x6: // TDC data packets
-                        processTDCPacket(allSignalpackets[actualPacketIndex], signalDataArray[actualPacketIndex]);
+                        processTDCPacket(allTpx3Datapackets[actualPacketIndex], signalDataArray[actualPacketIndex]);
                         tpx3FileInfo.numberOfTDC1s++;
                         break;
                     case 0x4: // Global time data packets
                         {
-                            processGlobalTimePacket(allSignalpackets[actualPacketIndex], signalDataArray[actualPacketIndex]);
+                            processGlobalTimePacket(allTpx3Datapackets[actualPacketIndex], signalDataArray[actualPacketIndex]);
                             tpx3FileInfo.numberOfGTS++;
                             break;
                         }
                     case 0x5: { // SPIDR control packets, note the added braces to introduce a new block scope
-                        uint8_t subType = static_cast<uint8_t>((allSignalpackets[actualPacketIndex] >> 56) & 0xF);
+                        uint8_t subType = static_cast<uint8_t>((allTpx3Datapackets[actualPacketIndex] >> 56) & 0xF);
                         switch (subType) {
                             case 0xF:
                                 if(configParams.verboseLevel >= 4){std::cout << "Open shutter packet detected." << std::endl;}
@@ -241,7 +389,7 @@ tpx3FileDianostics unpackAndSortEntireTPX3File(configParameters configParams){
                         break;
                     }
                     case 0x7: { // TPX3 control packets, again note the added braces
-                        uint8_t controlType = static_cast<uint8_t>((allSignalpackets[actualPacketIndex] >> 48) & 0xFF);
+                        uint8_t controlType = static_cast<uint8_t>((allTpx3Datapackets[actualPacketIndex] >> 48) & 0xFF);
                         if (controlType ==0xA0) {
                             if(configParams.verboseLevel >= 4){
                                 std::cout << "End of sequential readout detected with "<< std::hex << "packetType: 0x" << +packetType << "\t"<< "countrolType: 0x" << +controlType << std::endl;
@@ -321,11 +469,13 @@ tpx3FileDianostics unpackAndSortEntireTPX3File(configParameters configParams){
 
 
 
-    delete[] allSignalpackets; // Don't forget to free the allocated memory
+    delete[] allTpx3Datapackets; // Don't forget to free the allocated memory
     delete[] signalDataArray;  // Assuming you're done with signalDataArray
 
     return tpx3FileInfo;
 }
+
+
 
 /**
  * @brief Unpcaked and processes TPX3 file buffer by buffer.
@@ -339,36 +489,30 @@ tpx3FileDianostics unpackAndSortEntireTPX3File(configParameters configParams){
  * @return tpx3FileInfo a tpx3FileDianostics structure that contains all the diagnostic containers for
  * unpacking and processing tpx3Files. 
  */
-tpx3FileDianostics unpackandSortTPX3FileInSequentialBuffers(configParameters configParams){
-    
-    // initiate container for diagnositcs while unpacking. 
-    tpx3FileDianostics tpx3FileInfo; 
+/*
+tpx3FileDiagnostics unpackandSortTPX3FileInSequentialBuffers(configParameters configParams){
+     
+    std::ifstream tpx3File;             // initiate a input filestream for reading in TPX3file
+    std::ofstream rawSignalsFile;       // initiate a output filestream for writing raw data
+    tpx3FileDiagnostics tpx3FileInfo;    // initiate container for diagnositcs while unpacking.
 
     // Open the TPX3File
-    std::string fullTpx3Path = configParams.rawTPX3Folder + "/" + configParams.rawTPX3File;
-    std::cout << "Opening TPX3 file at path: " << configParams.rawTPX3File << std::endl;
-    std::ifstream tpxFile(fullTpx3Path, std::ios::binary);
-    if (!tpxFile) {throw std::runtime_error("Unable to open input TPX3 file at path: " + fullTpx3Path);}
-    
-    // Determine length of file
-    tpxFile.seekg(0, tpxFile.end);                  // Move the pointer to the end to find the file length
-    tpx3FileInfo.filesize = tpxFile.tellg();        // Get the length of the file
-    tpxFile.seekg(0, tpxFile.beg);                  // Move the pointer back to the beginning of the file for reading
-    tpx3FileInfo.numberOfDataPackets = tpx3FileInfo.filesize/8;
+    try {tpx3File = openTPX3File(configParams,tpx3FileInfo);} 
+    catch (const std::runtime_error& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return {};  // Handle the error as needed, possibly returning an error code or an empty object
+    }  
 
-    // If writeRawSignals is true, attempt to create/open an output file for writing raw signals
-    ofstream rawSignalsFile;
-    if (configParams.writeRawSignals) {
-        std::string fullOutputPath = configParams.outputFolder + "/" + configParams.runHandle +".rawsignals";
-        rawSignalsFile.open(fullOutputPath, ios::out | ios::binary);
-        if (!rawSignalsFile) {
-            throw std::runtime_error("Unable to open output file!");
-        }
+    // If writeRawSignals is true, Attempt to open the output file for raw signals, if configured to do so
+    try {rawSignalsFile = openRawSignalsOutputFile(configParams);} 
+    catch (const std::runtime_error& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return {}; // Handle the erroras needed, possibly returning an error code or an empty object
     }
 
     char* HeaderBuffer = new char[8];
 
-    while(tpxFile.read(HeaderBuffer, 8)) {  
+    while(tpx3File.read(HeaderBuffer, 8)) {  
 
         // Read header buffer and check for TPX
         if (HeaderBuffer[0] == 'T' && HeaderBuffer[1] == 'P' && HeaderBuffer[2] == 'X') {
@@ -393,7 +537,7 @@ tpx3FileDianostics unpackandSortTPX3FileInSequentialBuffers(configParameters con
             
             // Read the data buffer
             auto startUnpackTime = std::chrono::high_resolution_clock::now(); // Grab a START time for unpacking
-            tpxFile.read((char*)datapackets, bufferSize);  
+            tpx3File.read((char*)datapackets, bufferSize);  
 
             // Process each data packet in buffer and update signalDataArray
             for (int j = 0; j < dataPacketsInBuffer; j++) {
@@ -491,7 +635,7 @@ tpx3FileDianostics unpackandSortTPX3FileInSequentialBuffers(configParameters con
 
     // Close the TPX3File and print message depending on verbose level. 
     if(configParams.verboseLevel>=1){std::cout << "Closing TPX3 file: "<< configParams.rawTPX3File << std::endl;}
-    tpxFile.close();
+    tpx3File.close();
 
     // If writeRawSignals is true, then also close output file
     if(configParams.writeRawSignals){
@@ -503,7 +647,7 @@ tpx3FileDianostics unpackandSortTPX3FileInSequentialBuffers(configParameters con
 }
 
 
-
+*/
 
 
 

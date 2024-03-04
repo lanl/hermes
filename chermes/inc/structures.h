@@ -25,7 +25,7 @@ struct configParameters {
     int minPts = 0;
 
     //Diagnostic options
-    int maxBuffersToRead = 0;       // Number of buffer to read in. 0 means read all buffers. 
+    uint32_t maxBuffersToRead = 0;       // Number of buffer to read in. 0 means read all buffers. 
     bool fillHistgrams = false;     // Flag to fill histograms
     int verboseLevel = 1;           // Verbosity Level
                                     // 1 = General file input/output
@@ -34,16 +34,15 @@ struct configParameters {
 };
 
 // This structure is used to contain various dianostic info used during the unpacking processes (in dataPacketProcessor class)
-
-struct tpx3FileDianostics {
+struct tpx3FileDiagnostics {
     uintmax_t filesize = 0;             // size in bytes of tpx3 file
-    int32_t numberOfDataPackets = 0;    // number of data packets
-    int32_t numberOfBuffers = 0;        // number of buffers 
-    int32_t numberOfPixelHits = 0;      // number of pixel hits
-    int32_t numberOfTDC1s = 0;          // number of TDC1 triggers
-    int32_t numberOfTDC2s = 0;          // number of TDC2 triggers
-    int32_t numberOfGTS = 0;            // number of global time stamps.
-    int32_t numberOfTXP3Controls = 0;   // number of TPX3 Control packets.
+    uint64_t numberOfDataPackets = 0;    // number of data packets
+    uint32_t numberOfBuffers = 0;        // number of buffers 
+    uint32_t numberOfPixelHits = 0;      // number of pixel hits
+    uint32_t numberOfTDC1s = 0;          // number of TDC1 triggers
+    uint32_t numberOfTDC2s = 0;          // number of TDC2 triggers
+    uint32_t numberOfGTS = 0;            // number of global time stamps.
+    uint32_t numberOfTXP3Controls = 0;   // number of TPX3 Control packets.
 
     double totalHermesTime = 0;
     double totalUnpackingTime = 0;
@@ -54,11 +53,13 @@ struct tpx3FileDianostics {
 
 // Represents the data for a single raw signal.
 struct signalData {
-    uint8_t signalType; // Type of the signal (TDC=1,Pixel=2,GTS=3)
-    uint8_t xPixel;     // X-coordinate of the pixel
-    uint8_t yPixel;     // Y-coordinate of the pixel
-    double ToaFinal;    // Time of Arrival in seconds (final value)
-    float TotFinal;     // Time over Threshold in nano seconds (final value)
+    uint32_t bufferNumber;  // Buffer number from where signal was recorded
+    uint8_t signalType;     // Type of the signal (TDC=1,Pixel=2,GTS=3)
+    uint8_t xPixel;         // X-coordinate of the pixel
+    uint8_t yPixel;         // Y-coordinate of the pixel
+    double ToaFinal;        // Time of Arrival in seconds (final value)
+    uint16_t TotFinal;      // Time over Threshold in nano seconds (final value)
+    uint16_t groupID;       // 
 };
 
 // Represents the data for a single reconstructed photon.

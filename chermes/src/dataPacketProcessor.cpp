@@ -98,7 +98,7 @@ void sortSignals(const configParameters& configParams, signalData* signalDataArr
  * @param tpx3FileInfo Diagnostics structure that is updated with the duration of the clustering operation.
  */
 
-void clusterSignals(const configParameters& configParams, signalData* signalDataArray, size_t numberOfDataPackets, tpx3FileDiagnostics& tpx3FileInfo) {
+void clusterSignals(const configParameters& configParams, signalData* signalDataArray, tpx3FileDiagnostics& tpx3FileInfo) {
     if (configParams.verboseLevel >= 3) {
         std::cout << "Clustering pixels based on DBSCAN " << std::endl;
     }
@@ -497,7 +497,7 @@ tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams){
 
     if (configParams.sortSignals){sortSignals(configParams, signalDataArray, tpx3FileInfo);}        // If sortSingnals is true then sort!! 
     if (configParams.writeRawSignals){writeRawSignals(configParams, rawSignalsFile, signalDataArray, tpx3FileInfo);}    // If writeRawSignals is true then write out binary
-    if (configParams.clusterPixels){clusterSignals(configParams, signalDataArray, tpx3FileInfo.numberOfDataPackets, tpx3FileInfo);}
+    if (configParams.clusterPixels){clusterSignals(configParams, signalDataArray, tpx3FileInfo);}
 
     delete[] allTpx3Datapackets;    // Don't forget to free the allocated memory
     delete[] signalDataArray;       // Assuming you're done with signalDataArray

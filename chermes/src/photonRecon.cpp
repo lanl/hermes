@@ -22,6 +22,7 @@ bool isNeighbor(const signalData& p1, const signalData& p2, double epsSpatial, d
 
 // Queries the dataset to find neighbors of a given signal data point based on spatial and temporal thresholds.
 std::vector<size_t> regionQuery(signalData* signalDataArray, size_t pIndex, double epsSpatial, double epsTemporal, size_t dataPacketsInBuffer) {
+    
     std::vector<size_t> neighbors;
     for (size_t i = 0; i < dataPacketsInBuffer; i++) {
         if (isNeighbor(signalDataArray[pIndex], signalDataArray[i], epsSpatial, epsTemporal)) {
@@ -49,6 +50,7 @@ void expandCluster(configParameters config, signalData* signalDataArray, int32_t
         if (signalGroupID[qIndex] == 0) {
             signalGroupID[qIndex] = clusterId;
 
+            // --->>> Here I need to make a sub array of signalDataArray to reduce the size of the region that I am querying. 
             std::vector<size_t> qNeighbors = regionQuery(signalDataArray, qIndex, config.epsSpatial, config.epsTemporal, dataPacketsInBuffer);
             if (qNeighbors.size() >= static_cast<size_t>(config.minPts)) {
                 neighbors.insert(neighbors.end(), qNeighbors.begin(), qNeighbors.end());
@@ -95,33 +97,4 @@ void ST_DBSCAN(configParameters config, signalData* signalDataArray, int32_t* si
             }
         }
     }
-    /* THis is wrong. I need to open the file before I enter the for loop that iterates through all the buffers. 
-    if (config.writeOutPhotons == true){
-        // Open a binary file for output
-        //std::string fullOutputPath = config.outputFolder + "/" + config.runHandle +".photons";
-        //std::ofstream outFile("photons.bin", std::ios::binary | std::ios::out);
-        
-        if (!outFile) {
-            std::cerr << "Error opening file for writing." << std::endl;
-            return; // Or handle the error as appropriate
-        }
-
-        // Iterate over the photons vector and write each photonData to the file
-        for (const auto& photon : photons) {
-            outFile.write(reinterpret_cast<const char*>(&photon), sizeof(photonData));
-        }
-
-        outFile.close(); // Close the file when done
-    }*/
-    
-
-    // Print out diagnostics here...
-    //std::cout << "Total number of photons: " << photons.size() << std::endl;
-    //for (size_t i = 0; i < photons.size(); ++i) {
-    //    std::cout << "x = " << photons[i].photon_x << ", "
-    //              << "y = " << photons[i].photon_y << ", "
-    //              << "ToA = " << photons[i].photon_toa << ", "
-    //              << "ToT = " << photons[i].integrated_tot << std::endl;
-    //}
-
 }

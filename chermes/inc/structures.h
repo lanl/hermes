@@ -68,11 +68,15 @@ struct photonData{
     float photon_y = 0;
     double photon_toa = 0;
     uint16_t integrated_tot = 0;
+    uint8_t multiplicity = 0;
+    double timeDuration = 0;
 };
 
+
+/*
 struct clusterInfo {
     int multiplicity;
     double timeDuration;
-};
+};*/
 
 #endif

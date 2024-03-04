@@ -69,7 +69,7 @@ void printGroupIDs(int buffernNumber, signalData* signalDataArray, int16_t* sign
  * unpacking and processing tpx3Files.
  * @return nothing
  */
-void printOutUnpackingDiagnostics(tpx3FileDianostics tpxFileInfo){
+void printOutUnpackingDiagnostics(tpx3FileDiagnostics tpxFileInfo){
     int numberOfUnprocessedPackets = tpxFileInfo.numberOfDataPackets - tpxFileInfo.numberOfBuffers - tpxFileInfo.numberOfTDC1s - tpxFileInfo.numberOfPixelHits - tpxFileInfo.numberOfGTS - tpxFileInfo.numberOfTXP3Controls;
     std::cout << std::endl << "=============== Diagnostics ==============" << std::endl;
     std::cout << "Total HERMES Time: " << tpxFileInfo.totalHermesTime << " seconds" << std::endl;

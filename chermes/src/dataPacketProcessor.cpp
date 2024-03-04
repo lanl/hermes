@@ -50,6 +50,69 @@ std::chrono::duration<double> bufferSortTime;
 std::chrono::duration<double> bufferWriteTime;
 std::chrono::duration<double> bufferClusterTime;
 
+/**
+ * @brief Sorts an array of signalData structures by the ToaFinal field and updates sorting time diagnostics.
+ *
+ * This function sorts an array of signalData structures in ascending order based on the ToaFinal field, 
+ * The function also measures the duration of the sorting process using high-resolution clocks and updates
+ *  the totalSortingTime field in the tpx3FileDiagnostics structure to facilitate performance diagnostics.
+ * Additionally, it outputs a message indicating the start of the sorting operation if the verboseLevel in 
+ * configParameters is set to 3 or higher.
+ *
+ * @param configParams A const reference to the configParameters structure that includes control 
+ *                     parameters for the operation, such as the verbosity level for logging.
+ * @param signalDataArray A pointer to the first element of an array of signalData structures to be sorted. 
+ *                        The array is modified in place by the sorting operation. The length of this 
+ *                        array is determined by the numberOfDataPackets field in tpx3FileInfo.
+ * @param tpx3FileInfo A reference to a tpx3FileDiagnostics structure that is updated with the 
+ *                     sorting duration. This structure also provides the number of data packets 
+ *                     (elements) in signalDataArray that should be sorted.
+ */
+void sortSignals(const configParameters& configParams, signalData* signalDataArray, tpx3FileDiagnostics& tpx3FileInfo) {
+    auto startSortTime = std::chrono::high_resolution_clock::now(); // Grab a start time for sorting
+        
+    // Print info depending on verbosity level
+    if (configParams.verboseLevel>=3) {std::cout <<"Sorting raw signal data. " << std::endl;}
+
+    // Sort the signalDataArray based on ToaFinal
+    std::sort(signalDataArray, signalDataArray + tpx3FileInfo.numberOfDataPackets,[](const signalData &a, const signalData &b) -> bool {return a.ToaFinal < b.ToaFinal;});
+    
+    // Grab stop time, calculate buffer sort duration, and append to total sorting time.
+    auto stopSortTime = std::chrono::high_resolution_clock::now();
+    bufferSortTime = stopSortTime - startSortTime;
+    tpx3FileInfo.totalSortingTime = tpx3FileInfo.totalSortingTime + bufferSortTime.count();
+}
+
+
+/**
+ * @brief Clusters signal data based on the a selected algorithm and updates clustering time.
+ *
+ * Invokes a clustering algorithm (e.g., DBSCAN) to group pixels in the signalDataArray into clusters based on their properties.
+ * The function measures the duration of the clustering process and updates the totalClusteringTime in the tpx3FileDiagnostics structure.
+ * A message indicating the start of the clustering operation is printed if the verboseLevel in configParams is 3 or higher.
+ * The actual clustering function (ST_DBSCAN or equivalent) should be defined elsewhere and is assumed to operate on the signalDataArray.
+ *
+ * @param configParams Configuration parameters, including the verbosity level for logging.
+ * @param signalDataArray Array of signalData structures to be clustered. The array size is determined by numberOfDataPackets.
+ * @param numberOfDataPackets The number of data packets (elements) in signalDataArray to be clustered.
+ * @param tpx3FileInfo Diagnostics structure that is updated with the duration of the clustering operation.
+ */
+
+void clusterSignals(const configParameters& configParams, signalData* signalDataArray, size_t numberOfDataPackets, tpx3FileDiagnostics& tpx3FileInfo) {
+    if (configParams.verboseLevel >= 3) {
+        std::cout << "Clustering pixels based on DBSCAN " << std::endl;
+    }
+
+    auto startClusterTime = std::chrono::high_resolution_clock::now();
+    
+    // Invoke the clustering algorithm.
+    //ST_DBSCAN(configParams, signalDataArray, numberOfDataPackets);
+
+    auto stopClusterTime = std::chrono::high_resolution_clock::now();
+    auto bufferClusterTime = std::chrono::duration_cast<std::chrono::milliseconds>(stopClusterTime - startClusterTime).count();
+    tpx3FileInfo.totalClusteringTime += bufferClusterTime;
+}
+
 
 /**
  * @brief Opens a TPX3 file, calculates file size and number of data packets, updates diagnostic information, and returns an ifstream object.
@@ -70,9 +133,9 @@ std::chrono::duration<double> bufferClusterTime;
  * @return std::ifstream An ifstream object associated with the opened TPX3 file. This object is used for subsequent file reading operations.
  * @throws std::runtime_error if the TPX3 file cannot be opened or if there is an error obtaining the file size.
  */
-std::ifstream openTPX3File(const configParameters& config, tpx3FileDiagnostics& tpx3FileInfo) {
+std::ifstream openTPX3File(const configParameters& configParams, tpx3FileDiagnostics& tpx3FileInfo) {
     // Construct the full path to the TPX3 file
-    std::string fullTpx3Path = config.rawTPX3Folder + "/" + config.rawTPX3File;
+    std::string fullTpx3Path = configParams.rawTPX3Folder + "/" + configParams.rawTPX3File;
     std::cout << "Opening TPX3 file at path: " << fullTpx3Path << std::endl;
     
     // Attempt to open the TPX3 file
@@ -88,7 +151,7 @@ std::ifstream openTPX3File(const configParameters& config, tpx3FileDiagnostics& 
     try {
         tpx3FileInfo.filesize = std::filesystem::file_size(fullTpx3Path);
         tpx3FileInfo.numberOfDataPackets = tpx3FileInfo.filesize / 8;
-        if (config.verboseLevel >= 2) {
+        if (configParams.verboseLevel >= 2) {
             std::cout << "File size: " << tpx3FileInfo.filesize << " bytes" << std::endl;
             std::cout << "Number of Data Packets: " << tpx3FileInfo.numberOfDataPackets << std::endl;
         }
@@ -117,13 +180,13 @@ std::ifstream openTPX3File(const configParameters& config, tpx3FileDiagnostics& 
  *                       may not be opened (check with is_open() before using).
  * @throws std::runtime_error If the file cannot be opened when writeRawSignals is true.
  */
-std::ofstream openRawSignalsOutputFile(const configParameters& config) {
+std::ofstream openRawSignalsOutputFile(const configParameters& configParams) {
     std::ofstream rawSignalsFile;
 
     // Check if writing raw signals is enabled
-    if (config.writeRawSignals) {
+    if (configParams.writeRawSignals) {
         // Construct the full path to the output file
-        std::string fullOutputPath = config.outputFolder + "/" + config.runHandle + ".rawsignals";
+        std::string fullOutputPath = configParams.outputFolder + "/" + configParams.runHandle + ".rawsignals";
         std::cout << "Opening output file for raw signals at path: " << fullOutputPath << std::endl;
 
         // Attempt to open the output file
@@ -142,6 +205,35 @@ std::ofstream openRawSignalsOutputFile(const configParameters& config) {
     // Note: If writing is disabled, this returns an unopened ofstream, which the caller needs to check
     return rawSignalsFile;
 }
+
+
+/**
+ * @brief Writes raw signal data to a file and updates writing duration.
+ *
+ * Logs the operation if verboseLevel is 3 or higher, writes the raw signal data from signalDataArray to 
+ * the file associated with rawSignalsFile, and updates tpx3FileInfo's totalWritingTime with the duration 
+ * of the write operation. Assumes rawSignalsFile is open and ready for writing.
+ *
+ * @param configParams Configuration parameters, including verboseLevel for logging.
+ * @param rawSignalsFile Open ofstream for writing raw signal data.
+ * @param signalDataArray Array of signalData to be written.
+ * @param tpx3FileInfo Diagnostics structure to be updated with writing time.
+ */
+void writeRawSignals(const configParameters& configParams, std::ofstream& rawSignalsFile, const signalData* signalDataArray, tpx3FileDiagnostics& tpx3FileInfo) {
+
+    if (configParams.verboseLevel >= 3) {std::cout << "Writing out raw signal data." << std::endl;}
+
+    auto startWriteTime = std::chrono::high_resolution_clock::now(); // Grab a start time for writing
+
+    // Perform the writing operation
+    rawSignalsFile.write(reinterpret_cast<const char*>(signalDataArray), sizeof(signalData) * tpx3FileInfo.numberOfDataPackets);
+
+    // Calculate and update the total writing time
+    auto stopWriteTime = std::chrono::high_resolution_clock::now();
+    auto bufferWriteTime = std::chrono::duration_cast<std::chrono::milliseconds>(stopWriteTime - startWriteTime).count();
+    tpx3FileInfo.totalWritingTime += bufferWriteTime;
+}
+
 
 /**
  * @brief Takes a TDC data packet from a tpx3 file, processes it, and updates the corresponding signal data structure. 
@@ -249,99 +341,34 @@ void processGlobalTimePacket(uint64_t datapacket, signalData &signalData) {
 }
 
 
-void processDataPackets(const configParameters& config, tpx3FileDiagnostics& tpx3FileInfo, const uint64_t* packets, signalData* signalDataArray, size_t numPackets) {
-    for (size_t i = 0; i < numPackets; ++i) {
-        // Extract packet type or other identifying information
-        uint8_t packetType = extractPacketType(packets[i]);
-
-        switch (packetType) {
-            case PACKET_TYPE_PIXEL_HIT:
-                // Process a pixel hit packet
-                processPixelPacket(packets[i], signalDataArray[i], tpx3FileInfo);
-                break;
-            case PACKET_TYPE_TDC_HIT:
-                // Process a TDC hit packet
-                processTDCPacket(packets[i], signalDataArray[i], tpx3FileInfo);
-                break;
-            // Add cases for other packet types as necessary
-            default:
-                std::cerr << "Unknown packet type encountered: " << static_cast<unsigned>(packetType) << std::endl;
-                // Handle unknown packet type, if necessary
-                break;
-        }
-    }
-
-    // Optionally, update tpx3FileInfo based on processed data
-    updateDiagnostics(tpx3FileInfo, ...);
-}
-
-
-/**
- * @brief Takes a Global Time Stamp data packet from a tpx3 file, processes it, 
- * and updates the corresponding signal data structure. 
- *
- * This function takes the data packet pass through unsigned long long datapacket and processes the timing of 
- * the Global Time Stamp hit. It then update the corresponding signalData structure, which is passed by refference. 
- * 
- * TODO: I need to rewrite this for clarity. Also need to figure out logic for time stamps.  
- * 
- * @param datapacket     64 btye data packet that contains raw timing info
- * @param signalData    HERMES defined structure that contain raw data info from data packets.
- * @return nothing
- */ 
-tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams){
+void processDataPackets(const configParameters& configParams, tpx3FileDiagnostics& tpx3FileInfo, const uint64_t* dataPackets, signalData* signalDataArray, size_t numberOfDataPackets) {
     
-    std::ifstream tpx3File;             // initiate a input filestream for reading in TPX3file
-    std::ofstream rawSignalsFile;       // initiate a output filestream for writing raw data
-    tpx3FileDiagnostics tpx3FileInfo;    // initiate container for diagnositcs while unpacking.
-
-    // Open the TPX3File
-    try {tpx3File = openTPX3File(configParams,tpx3FileInfo);} 
-    catch (const std::runtime_error& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return {};  // Handle the error as needed, possibly returning an error code or an empty object
-    }  
-
-    // If writeRawSignals is true, Attempt to open the output file for raw signals, if configured to do so
-    try {rawSignalsFile = openRawSignalsOutputFile(configParams);} 
-    catch (const std::runtime_error& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return {}; // Handle the erroras needed, possibly returning an error code or an empty object
-    }
-
-    // allocate an array for allTpx3Datapackets, store all signals from the entire TPX3File, then close the TPX3 file.  
-    uint64_t* allTpx3Datapackets = new uint64_t [tpx3FileInfo.numberOfDataPackets];
-    tpx3File.read((char*) allTpx3Datapackets, tpx3FileInfo.filesize);
-    tpx3File.close();
-
-    // Initiate an array of signalData called signalDataArray that is the same size as bufferSize//8
-    signalData* signalDataArray = new signalData[tpx3FileInfo.numberOfDataPackets];
-
     // Grab a START time for unpacking
     auto startUnpackTime = std::chrono::high_resolution_clock::now(); 
-    
 
     // Convert "TPX3" string to uint32_t in little endian format
     const char tpx3SignatureStr[] = "TPX3";
     uint32_t tpx3Signature;
     memcpy(&tpx3Signature, tpx3SignatureStr, sizeof(uint32_t));
 
-    uint64_t currentPacket = 0; // Initialize the counter outside the while loop
+    // Initialize the counter outside the while loop
+    uint64_t currentPacket = 0; 
     
     // Continue to loop through datapacket array until you hit the numberOfDataPackets 
     while (currentPacket < tpx3FileInfo.numberOfDataPackets) {
         // Grab last 32 bits of current packt
-        uint32_t tpx3flag = static_cast<uint32_t>(allTpx3Datapackets[currentPacket]);
+        uint32_t tpx3flag = static_cast<uint32_t>(dataPackets[currentPacket]);
 
         // If tpx3flag matches the "TPX3" then you found a chuck header
         if (tpx3flag == tpx3Signature) {
 
             // Start processing the chuck header to get size and number of data packets in chuck. 
-            uint16_t chunkSize = static_cast<uint16_t>((allTpx3Datapackets[currentPacket] >> 48) & 0xFFFF);
+            uint16_t chunkSize = static_cast<uint16_t>((dataPackets[currentPacket] >> 48) & 0xFFFF);
             uint16_t numPacketsInChunk = chunkSize / 8;
 
             // Iterate through each data packet in the current chunk
             for (uint16_t chunkPacketIndex = 1; chunkPacketIndex <= numPacketsInChunk; ++chunkPacketIndex) {
+                
                 // Calculate the actual index of the current data packet within the entire array
                 uint64_t actualPacketIndex = currentPacket + chunkPacketIndex;
 
@@ -349,7 +376,7 @@ tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams){
                 if (actualPacketIndex >= tpx3FileInfo.numberOfDataPackets) break;
 
                 // Extract the packet type from the most significant nibble
-                uint8_t packetType = static_cast<uint8_t>((allTpx3Datapackets[actualPacketIndex] >> 60) & 0xF);
+                uint8_t packetType = static_cast<uint8_t>((dataPackets[actualPacketIndex] >> 60) & 0xF);
 
                 switch (packetType) {
                     case 0xA: // Integrated ToT mode
@@ -357,21 +384,21 @@ tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams){
                         std::cout << "Integrated ToT mode packet detected." << std::endl;
                         break;
                     case 0xB: // Time of Arrival mode
-                        processPixelPacket(allTpx3Datapackets[actualPacketIndex], signalDataArray[actualPacketIndex]);
+                        processPixelPacket(dataPackets[actualPacketIndex], signalDataArray[actualPacketIndex]);
                         tpx3FileInfo.numberOfPixelHits++;
                         break;
                     case 0x6: // TDC data packets
-                        processTDCPacket(allTpx3Datapackets[actualPacketIndex], signalDataArray[actualPacketIndex]);
+                        processTDCPacket(dataPackets[actualPacketIndex], signalDataArray[actualPacketIndex]);
                         tpx3FileInfo.numberOfTDC1s++;
                         break;
                     case 0x4: // Global time data packets
                         {
-                            processGlobalTimePacket(allTpx3Datapackets[actualPacketIndex], signalDataArray[actualPacketIndex]);
+                            processGlobalTimePacket(dataPackets[actualPacketIndex], signalDataArray[actualPacketIndex]);
                             tpx3FileInfo.numberOfGTS++;
                             break;
                         }
                     case 0x5: { // SPIDR control packets, note the added braces to introduce a new block scope
-                        uint8_t subType = static_cast<uint8_t>((allTpx3Datapackets[actualPacketIndex] >> 56) & 0xF);
+                        uint8_t subType = static_cast<uint8_t>((dataPackets[actualPacketIndex] >> 56) & 0xF);
                         switch (subType) {
                             case 0xF:
                                 if(configParams.verboseLevel >= 4){std::cout << "Open shutter packet detected." << std::endl;}
@@ -389,7 +416,7 @@ tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams){
                         break;
                     }
                     case 0x7: { // TPX3 control packets, again note the added braces
-                        uint8_t controlType = static_cast<uint8_t>((allTpx3Datapackets[actualPacketIndex] >> 48) & 0xFF);
+                        uint8_t controlType = static_cast<uint8_t>((dataPackets[actualPacketIndex] >> 48) & 0xFF);
                         if (controlType ==0xA0) {
                             if(configParams.verboseLevel >= 4){
                                 std::cout << "End of sequential readout detected with "<< std::hex << "packetType: 0x" << +packetType << "\t"<< "countrolType: 0x" << +controlType << std::endl;
@@ -424,55 +451,68 @@ tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams){
     auto stopUnpackTime = std::chrono::high_resolution_clock::now(); // Grab a STOP time for unpacking
     bufferUnpackTime = stopUnpackTime - startUnpackTime;
     tpx3FileInfo.totalUnpackingTime = tpx3FileInfo.totalUnpackingTime + bufferUnpackTime.count();
+}
+
+
+/**
+ * @brief Takes a Global Time Stamp data packet from a tpx3 file, processes it, 
+ * and updates the corresponding signal data structure. 
+ *
+ * This function takes the data packet pass through unsigned long long datapacket and processes the timing of 
+ * the Global Time Stamp hit. It then update the corresponding signalData structure, which is passed by refference. 
+ * 
+ * TODO: I need to rewrite this for clarity. Also need to figure out logic for time stamps.  
+ * 
+ * @param datapacket     64 btye data packet that contains raw timing info
+ * @param signalData    HERMES defined structure that contain raw data info from data packets.
+ * @return nothing
+ */ 
+tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams){
+    
+    std::ifstream tpx3File;             // initiate a input filestream for reading in TPX3file
+    std::ofstream rawSignalsFile;       // initiate a output filestream for writing raw data
+    tpx3FileDiagnostics tpx3FileInfo;    // initiate container for diagnositcs while unpacking.
+
+    // TODO: Combine these two once better error handling is implemented. 
+    // Open the TPX3File
+    try {tpx3File = openTPX3File(configParams,tpx3FileInfo);} 
+    catch (const std::runtime_error& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return {};  // Handle the error as needed, possibly returning an error code or an empty object
+    }  
+    // If writeRawSignals is true, Attempt to open the output file for raw signals, if configured to do so
+    try {rawSignalsFile = openRawSignalsOutputFile(configParams);} 
+    catch (const std::runtime_error& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return {}; // Handle the erroras needed, possibly returning an error code or an empty object
+    }
+
+    // allocate an array for allTpx3Datapackets, store all signals from the entire TPX3File, then close the TPX3 file.  
+    uint64_t* allTpx3Datapackets = new uint64_t [tpx3FileInfo.numberOfDataPackets];
+    tpx3File.read((char*) allTpx3Datapackets, tpx3FileInfo.filesize);
+    tpx3File.close();
+
+    // allocate an array of signalData called signalDataArray that is the same size as bufferSize//8
+    signalData* signalDataArray = new signalData[tpx3FileInfo.numberOfDataPackets];
+
+    processDataPackets(configParams, tpx3FileInfo,  allTpx3Datapackets, signalDataArray, tpx3FileInfo.numberOfDataPackets);
 
     // If sortSingnals is true then sort!! 
     if (configParams.sortSignals){
-        auto startSortTime = std::chrono::high_resolution_clock::now(); // Grab a start time for sorting
-        
-        // Print info depending on verbosity level
-        if (configParams.verboseLevel>=3) {std::cout <<"Sorting raw signal data. " << std::endl;}
-
-        // Sort the signalDataArray based on ToaFinal
-        std::sort(signalDataArray, signalDataArray + tpx3FileInfo.numberOfDataPackets,[](const signalData &a, const signalData &b) -> bool {return a.ToaFinal < b.ToaFinal;});
-        
-        // Grab stop time, calculate buffer sort duration, and append to total sorting time.
-        auto stopSortTime = std::chrono::high_resolution_clock::now();
-        bufferSortTime = stopSortTime - startSortTime;
-        tpx3FileInfo.totalSortingTime = tpx3FileInfo.totalSortingTime + bufferSortTime.count();
+        sortSignals(configParams, signalDataArray, tpx3FileInfo);
     }
 
-    // TODO: Check if this is correct!!
     if (configParams.writeRawSignals){
-        if (configParams.verboseLevel>=3) {std::cout <<"Writing out raw signal data. " << std::endl;}
-        if(configParams.writeRawSignals){
-            auto startWriteTime = std::chrono::high_resolution_clock::now(); // Grab a start time for writing
-            rawSignalsFile.write(reinterpret_cast<char*>(signalDataArray), sizeof(signalData) * tpx3FileInfo.numberOfDataPackets);
-            // Grab stop time, calculate buffer sort duration, and append to total sorting time.
-            auto stopWriteTime = std::chrono::high_resolution_clock::now();
-            bufferWriteTime = stopWriteTime - startWriteTime;
-            tpx3FileInfo.totalWritingTime = tpx3FileInfo.totalWritingTime + bufferWriteTime.count();
-        }
+        writeRawSignals(configParams, rawSignalsFile, signalDataArray, tpx3FileInfo);
     }
     // If clustering is turned on then start grouping signals into photon events using Spatial-Temporal DBSCAN.
     if (configParams.clusterPixels){
-
-        // Print message for each buffer if verboselevel = 3.
-        if (configParams.verboseLevel>=3) {std::cout <<"Clustering pixels based on DBSCAN " << std::endl;}
-
-        auto startClusterTime = std::chrono::high_resolution_clock::now();
-        // sort pixels into clusters (photons) using sorting algorith. 
-        ST_DBSCAN(configParams, signalDataArray, signalGroupID, tpx3FileInfo.numberOfDataPackets);
-        auto stopClusterTime = std::chrono::high_resolution_clock::now();
-        bufferClusterTime = stopClusterTime - startClusterTime;
-        tpx3FileInfo.totalClusteringTime = tpx3FileInfo.totalClusteringTime + bufferClusterTime.count();
+        clusterSignals(configParams, signalDataArray, tpx3FileInfo.numberOfDataPackets, tpx3FileInfo);
     }
 
-
-
-    delete[] allTpx3Datapackets; // Don't forget to free the allocated memory
-    delete[] signalDataArray;  // Assuming you're done with signalDataArray
-
-    return tpx3FileInfo;
+    delete[] allTpx3Datapackets;    // Don't forget to free the allocated memory
+    delete[] signalDataArray;       // Assuming you're done with signalDataArray
+    return tpx3FileInfo;            // Return the tpx3file info. 
 }
 
 

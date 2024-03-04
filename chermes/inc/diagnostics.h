@@ -22,6 +22,6 @@ extern int numberOfPhotons;
 
 // Function prototypes
 void printGroupIDs(int numberOfBuffers, signalData* signalDataArray, int16_t* signalGroupID,size_t dataPacketsInBuffer);
-void printOutUnpackingDiagnostics(tpx3FileDianostics tpxFileInfo);
+void printOutUnpackingDiagnostics(tpx3FileDiagnostics tpxFileInfo);
 
 #endif

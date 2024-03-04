@@ -15,7 +15,7 @@ int main(int argc, char *argv[]){
     auto hermesStartTime = std::chrono::high_resolution_clock::now();
 
     configParameters configParams;
-    tpx3FileDianostics tpxFileInfo;
+    tpx3FileDiagnostics tpxFileInfo;
 
     // Check for the number of command-line arguments
     if (argc < 2) {
@@ -35,7 +35,7 @@ int main(int argc, char *argv[]){
     if(configParams.verboseLevel>=2){printParameters(configParams);}
     
     //tpxFileInfo = unpackandSortTPX3FileInSequentialBuffers(configParams);
-    tpxFileInfo = unpackAndSortEntireTPX3File(configParams);
+    tpxFileInfo = unpackAndSortTPX3File(configParams);
 
     auto hermesStopTime = std::chrono::high_resolution_clock::now();
     hermesTime = hermesStopTime - hermesStartTime;

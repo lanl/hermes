@@ -15,6 +15,12 @@
 #include "structures.h"
 #include "photonRecon.h"
 
+std::ifstream openTPX3File(const std::string& path, tpx3FileDiagnostics& tpx3FileInfo);
+std::ofstream openRawSignalsOutputFile(const configParameters& configParams);
+void processDataPackets(const configParameters& configParams, tpx3FileDiagnostics& tpx3FileInfo, const uint64_t* packets, signalData* signalDataArray, size_t numPackets);
+void sortSignals(const configParameters& configParams, signalData* signalDataArray, size_t numberOfDataPackets);
+void writeRawSignals(const configParameters& configParams, std::ofstream& rawSignalsFile, const signalData* signalDataArray, tpx3FileDiagnostics& tpx3FileInfo);
+void clusterSignals(const configParameters& configParams, signalData* signalDataArray, size_t numberOfDataPackets, tpx3FileDiagnostics& tpx3FileInfo);
 
 // Processes a TDC packet and updates the provided signalData structure.
 void processTDCPacket(unsigned long long datapacket, signalData &signalData);
@@ -26,11 +32,10 @@ void processPixelPacket(unsigned long long datapacket, signalData &signalData);
 void processGlobalTimePacket(unsigned long long datapacket, signalData &signalData);
 
 // Unpack and process entire TPX3File
-tpx3FileDianostics unpackAndSortEntireTPX3File(configParameters configParams);
+tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams);
 
 // Unpack and process TPX3Files buffer by buffer
-tpx3FileDianostics unpackandSortTPX3FileInSequentialBuffers(configParameters configParams);
-
+//tpx3FileDiagnostics unpackandSortTPX3FileInSequentialBuffers(configParameters configParams);
 
 #endif
 

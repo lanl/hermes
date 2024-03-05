@@ -53,70 +53,118 @@ std::vector<size_t> regionQuery(configParameters configParams, tpx3FileDiagnosti
     return neighbors;
 }
 
-/*
-// Expands the cluster by adding reachable points based on spatial and temporal thresholds.
-void expandCluster(configParameters config, signalData* signalDataArray, size_t pIndex, std::vector<size_t>& neighbors, int clusterId, size_t dataPacketsInBuffer, photonData& pd) {
-    
-    signalDataArray->groupID[pIndex] = clusterId;
-    
-    // Initialize weighted sums with  initial point in the calculations
-    float weightedSumX = signalDataArray[pIndex].xPixel * signalDataArray[pIndex].TotFinal;    
-    float weightedSumY =  signalDataArray[pIndex].yPixel * signalDataArray[pIndex].TotFinal;    
-    double weightedSumToA = signalDataArray[pIndex].ToaFinal * signalDataArray[pIndex].TotFinal; 
-    uint16_t totalToT = signalDataArray[pIndex].TotFinal;     
 
-    // Loop through pixel neighbors, I think. 
-    for (size_t i = 0; i < neighbors.size(); i++) {
+/**
+ * @brief Expands a cluster from a seed point by including all density-reachable points within spatial and temporal thresholds.
+ *
+ * This function evaluates each new point found within the specified spatial and temporal thresholds that has not been already
+ * assigned to a cluster or marked as noise. If a point has enough neighbors, it is added to the cluster, and its neighbors
+ * are also evaluated, recursively expanding the cluster. The function accumulates photon data statistics for the cluster and
+ * returns a photonData structure containing the calculated center of mass and total Time over Threshold (ToT) for the cluster.
+ *
+ * @param configParams Configuration parameters including the spatial (epsSpatial) and temporal (epsTemporal) thresholds.
+ * @param tpx3FileInfo Contains information about the dataset, such as the number of data packets.
+ * @param signalDataArray Array of signal data points to be clustered.
+ * @param homeIndex Index of the seed point from which to start expanding the cluster.
+ * @param neighbors Initial list of neighbors of the seed point that meet the density criteria.
+ * @param clusterId The identifier for the current cluster being expanded.
+ * @return photonData Structure containing the photon data statistics for the expanded cluster.
+ */
+photonData expandCluster(configParameters configParams, tpx3FileDiagnostics& tpx3FileInfo, signalData* signalDataArray, size_t homeIndex, std::vector<size_t>& neighbors, size_t clusterId) {
+   
+    photonData pd;                                      // Create a photonData instance to be filled and returned
+    signalDataArray[homeIndex].groupID = clusterId;     // Mark the seed point as part of the cluster
 
-        size_t qIndex = neighbors[i];
-        if (signalGroupID[qIndex] == 0) {
-            signalGroupID[qIndex] = clusterId;
+    // Initialize weighted sums for calculating the center of mass (CoM) of the cluster
+    float weightedSumX = signalDataArray[homeIndex].xPixel * signalDataArray[homeIndex].TotFinal;
+    float weightedSumY = signalDataArray[homeIndex].yPixel * signalDataArray[homeIndex].TotFinal;
+    double weightedSumToA = signalDataArray[homeIndex].ToaFinal * signalDataArray[homeIndex].TotFinal;
+    uint16_t totalToT = signalDataArray[homeIndex].TotFinal;
 
-            // --->>> Here I need to make a sub array of signalDataArray to reduce the size of the region that I am querying. 
-            std::vector<size_t> qNeighbors = regionQuery(signalDataArray, qIndex, config.epsSpatial, config.epsTemporal, dataPacketsInBuffer);
-            if (qNeighbors.size() >= static_cast<size_t>(config.minPts)) {
+    // Use a queue to iteratively process each neighbor and its neighbors
+    size_t index = 0;
+    while (index < neighbors.size()) {
+        size_t qIndex = neighbors[index];
+
+        // Skip non-Pixel signals
+        if (signalDataArray[qIndex].signalType != 2) {
+            ++index; // Move to the next neighbor
+            continue; // Skip the rest of the iteration in this loop
+        }
+
+        // Only process points that haven't been assigned to a cluster or marked as noise
+        if (signalDataArray[qIndex].groupID == 0) { // Includes unvisited and noise (groupID = -1)
+            signalDataArray[qIndex].groupID = clusterId; // Mark as part of the current cluster
+
+            // Find neighbors of this point
+            std::vector<size_t> qNeighbors = regionQuery(configParams, tpx3FileInfo, signalDataArray, qIndex);
+
+            // If this point has enough neighbors, add them to the list for processing
+            if (qNeighbors.size() >= configParams.minPts) {
                 neighbors.insert(neighbors.end(), qNeighbors.begin(), qNeighbors.end());
             }
         }
-        // Assume ToT is accessible for each signal data point
+
+        // Update weighted sums for CoM calculations
         weightedSumX += signalDataArray[qIndex].xPixel * signalDataArray[qIndex].TotFinal;
         weightedSumY += signalDataArray[qIndex].yPixel * signalDataArray[qIndex].TotFinal;
         weightedSumToA += signalDataArray[qIndex].ToaFinal * signalDataArray[qIndex].TotFinal;
-        totalToT +=  signalDataArray[qIndex].TotFinal;
-    
+        totalToT += signalDataArray[qIndex].TotFinal;
+
+        ++index; // Move to the next neighbor
     }
-    // Calculate CoM based on distribution of x and y pixels and weighted by the tot and update photonData.
-    pd.photon_x = weightedSumX/totalToT; // Calculated weighted center X
-    pd.photon_y = weightedSumY/totalToT; // Calculated weighted center Y
-    pd.photon_toa = weightedSumToA/totalToT;
-    pd.integrated_tot = totalToT; // Total ToT for the cluster
+
+    // Calculate and store the cluster's center of mass and total ToT
+    pd.photon_x = weightedSumX / totalToT;
+    pd.photon_y = weightedSumY / totalToT;
+    pd.photon_toa = weightedSumToA / totalToT;
+    pd.integrated_tot = totalToT;
+
+    return pd;
 }
-*/
 
-// Implements the ST_DBSCAN clustering algorithm. 
-// It segregates data points into clusters based on spatial and temporal closeness.
+
+
+/**
+ * @brief Performs the ST_DBSCAN clustering algorithm on a dataset of signal data points.
+ *
+ * This function segregates Pixel signals (signalType == 2) into clusters based on spatial and temporal
+ * closeness according to configuration parameters, marks non-Pixel signals as unprocessed, and identifies
+ * noise. Clusters are assigned unique IDs starting from 2, with noise marked as 1, and unprocessed/non-Pixel
+ * signals left as 0.
+ *
+ * @param configParams Configuration parameters for the DBSCAN algorithm, including spatial and temporal
+ *        thresholds (epsSpatial, epsTemporal) and the minimum number of points (minPts) required to form
+ *        a cluster.
+ * @param tpx3FileInfo File diagnostics information including the total number of data packets
+ *        (numberOfDataPackets) to be processed.
+ * @param signalDataArray Array of signalData structs representing the dataset for clustering.
+ *
+ * @note The function modifies the `groupID` field of each `signalData` struct in `signalDataArray` to
+ *       indicate cluster membership, mark as noise, or leave as unprocessed for non-Pixel signals.
+ */
+
 void ST_DBSCAN(configParameters configParams, tpx3FileDiagnostics& tpx3FileInfo, signalData* signalDataArray) {
-    
-    size_t clusterId = 0;
-    // Initiate vector of photonData called photons.
-    std::vector<photonData> photons;
-    photonData singlePhoton;
+    uint32_t clusterId = 2; // Start cluster IDs from 2, reserving 1 for noise
+    std::vector<photonData> photons; // Vector to store photon data for each cluster.
 
-    for (size_t i = 0; i < tpx3FileInfo.numberOfDataPackets; i++) {
-        if (signalDataArray[i].signalType != 2) {
-            signalDataArray[i].groupID = -2; // signalType != 2
-            continue; // Skip to the next iteration
+    // Loop through signalDataArray and begin clustering. 
+    for (size_t currentPacketIndex = 0; currentPacketIndex < tpx3FileInfo.numberOfDataPackets; currentPacketIndex++) {
+        
+        // Skip processing for non-Pixel signals or already processed signals
+        // TODO: Figure out if I should be skipping already processed signals. 
+        if (signalDataArray[currentPacketIndex].signalType != 2 || signalDataArray[currentPacketIndex].groupID != 0) {
+            continue;
         }
 
-        if (signalDataArray[i].groupID == 0) { // unclassified
-            std::vector<size_t> neighbors = regionQuery(configParams, tpx3FileInfo, signalDataArray, i);
-            
-            if (neighbors.size() < static_cast<size_t>(configParams.minPts)) {signalDataArray[i].groupID = -1;} // Noise or gammas 
-            else {
-                clusterId++;
-                //expandCluster(configParams, signalDataArray, i, neighbors, clusterId, tpx3FileInfo.numberOfDataPackets, singlePhoton);
-                //photons.push_back(singlePhoton);
-            }
+        std::vector<size_t> neighbors = regionQuery(configParams, tpx3FileInfo, signalDataArray, currentPacketIndex);
+
+        if (neighbors.size() < static_cast<size_t>(configParams.minPts)) {
+            signalDataArray[currentPacketIndex].groupID = 1; // Mark as noise
+        } else {
+            clusterId++;
+            photonData clusterPhotonData = expandCluster(configParams, tpx3FileInfo, signalDataArray, currentPacketIndex, neighbors, clusterId);
+            photons.push_back(clusterPhotonData); // Store the photon data for the cluster
         }
     }
 }

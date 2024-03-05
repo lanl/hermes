@@ -109,8 +109,8 @@ void clusterSignals(const configParameters& configParams, signalData* signalData
     ST_DBSCAN(configParams, tpx3FileInfo, signalDataArray);
 
     auto stopClusterTime = std::chrono::high_resolution_clock::now();
-    auto bufferClusterTime = std::chrono::duration_cast<std::chrono::milliseconds>(stopClusterTime - startClusterTime).count();
-    tpx3FileInfo.totalClusteringTime += bufferClusterTime;
+    bufferClusterTime = stopClusterTime - startClusterTime;
+    tpx3FileInfo.totalClusteringTime += bufferClusterTime.count();
 }
 
 

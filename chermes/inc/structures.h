@@ -60,7 +60,7 @@ struct signalData {
     uint8_t yPixel;         // Y-coordinate of the pixel
     double ToaFinal;        // Time of Arrival in seconds (final value)
     uint16_t TotFinal;      // Time over Threshold in nano seconds (final value)
-    uint16_t groupID;       // 
+    uint32_t groupID;       // Group ID for clustering. 
 };
 
 // Represents the data for a single reconstructed photon.

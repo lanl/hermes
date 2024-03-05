@@ -104,11 +104,21 @@ bool readConfigFile(const std::string &filename, configParameters &params) {
                 std::cerr << ">CONFIG ERROR: Expected 'true' or 'false'. Setting to defualt value" << std::endl;
             }
         } else if (key == "epsSpatial") {
-            params.epsSpatial = std::stoi(value);
+            try {
+                int temp = std::stoi(value); // Convert string to int
+                if (temp >= 0 && temp <= 255) {
+                    params.epsSpatial = static_cast<uint8_t>(temp);
+                    std::cout << "epsSpatial: " << static_cast<int>(params.epsSpatial) << std::endl;
+                } else {
+                    std::cerr << "Error: epsSpatial value out of uint8_t range: " << value << std::endl;
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "Exception converting epsSpatial: " << e.what() << std::endl;
+            }
         } else if (key == "epsTemporal") {
             params.epsTemporal = std::stod(value);
         } else if (key == "minPts") {
-            params.minPts = std::stoi(value);
+            params.minPts = static_cast<uint8_t>(std::stoi(value));
         } 
     }
 
@@ -129,8 +139,8 @@ void printParameters(const configParameters &params) {
     std::cout << "fillHistgrams: " << (params.fillHistgrams ? "true" : "false") << std::endl;
     std::cout << "clusterPixels: " << (params.clusterPixels ? "true" : "false") << std::endl;
     std::cout << "writeOutPhotons: " << (params.writeOutPhotons ? "true" : "false") << std::endl;
-    std::cout << "epsSpatial: " << params.epsSpatial << std::endl;
+    std::cout << "epsSpatial: " << static_cast<int>(params.epsSpatial) << std::endl;
     std::cout << "epsTemporal: " << params.epsTemporal << std::endl;
-    std::cout << "minPts: " << params.minPts << std::endl;
+    std::cout << "minPts: " << static_cast<int>(params.minPts) << std::endl;
     std::cout << "=========================================================" << std::endl << std::endl;
 }

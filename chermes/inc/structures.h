@@ -26,7 +26,7 @@ struct configParameters {
     uint16_t queryRegion = 0;
 
     //Diagnostic options
-    uint32_t maxBuffersToRead = 0;       // Number of buffer to read in. 0 means read all buffers. 
+    uint32_t maxPacketsToRead = 0;  // Number of buffer to read in. 0 means read all buffers. 
     bool fillHistgrams = false;     // Flag to fill histograms
     int verboseLevel = 1;           // Verbosity Level
                                     // 1 = General file input/output
@@ -70,14 +70,6 @@ struct photonData{
     double photon_toa = 0;
     uint16_t integrated_tot = 0;
     uint8_t multiplicity = 0;
-    double timeDuration = 0;
 };
-
-
-/*
-struct clusterInfo {
-    int multiplicity;
-    double timeDuration;
-};*/
 
 #endif

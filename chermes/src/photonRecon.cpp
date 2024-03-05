@@ -21,22 +21,29 @@ bool isNeighbor(const signalData& p1, const signalData& p2, double epsSpatial, d
 }
 
 /**
- * @brief Queries the dataset to find neighbors of a specific signal data point within a defined range based on spatial and temporal thresholds.
+ * @brief Searches for neighboring signal data points within defined spatial
+ * and temporal thresholds.
  *
- * This function searches for neighboring points around a specified 'homeIndex' in the 'signalDataArray'. The search is confined within
- * a range of [-500, +500] indices from 'homeIndex', adjusted to stay within the bounds of the array. Neighbors are determined based on
- * the spatial and temporal distance thresholds specified in 'configParams'.
+ * This function identifies neighbors of a specified 'homeIndex' in
+ * 'signalDataArray', within a [-queryRegion, +queryRegion] range. It adjusts
+ * the search to stay within array bounds, using 'configParams' for spatial
+ * (epsSpatial) and temporal (epsTemporal) distance thresholds.
  *
- * @param configParams Configuration parameters including spatial (epsSpatial) and temporal (epsTemporal) thresholds for determining neighbors.
- * @param tpx3FileInfo An object containing file diagnostics, including the total number of data packets (numberOfDataPackets) to ensure search indices remain valid.
- * @param signalDataArray A pointer to the array of signal data points, each of which includes spatial coordinates, time of arrival, etc.
- * @param homeIndex The index of the signal data point in 'signalDataArray' for which neighbors are being searched.
+ * @param configParams Configuration parameters including spatial (epsSpatial)
+ * and temporal (epsTemporal) thresholds.
+ * @param tpx3FileInfo Contains file diagnostics, like total number of data
+ * packets (numberOfDataPackets), to keep search indices valid.
+ * @param signalDataArray Pointer to the array of signal data points, each
+ * includes spatial coordinates, time of arrival, etc.
+ * @param homeIndex Index in 'signalDataArray' for which neighbors are searched.
  *
- * @return std::vector<size_t> A vector containing the indices of all neighboring data points within the specified spatial and temporal thresholds.
+ * @return std::vector<size_t> Indices of neighboring data points within
+ * specified thresholds.
  *
  * Example usage:
  * auto neighbors = regionQuery(config, fileInfo, signalData, 1000);
- * This example searches for neighbors of the data point at index 1000 within the signalData array, using thresholds defined in 'config'.
+ * Searches for neighbors of data point at index 1000 in 'signalDataArray',
+ * using 'config' defined thresholds.
  */
 std::vector<size_t> regionQuery(configParameters configParams, tpx3FileDiagnostics& tpx3FileInfo, signalData* signalDataArray, const size_t homeIndex) {
     
@@ -55,20 +62,29 @@ std::vector<size_t> regionQuery(configParameters configParams, tpx3FileDiagnosti
 
 
 /**
- * @brief Expands a cluster from a seed point by including all density-reachable points within spatial and temporal thresholds.
+ * @brief Expands a cluster from a seed point by including all density-reachable
+ * points within spatial and temporal thresholds.
  *
- * This function evaluates each new point found within the specified spatial and temporal thresholds that has not been already
- * assigned to a cluster or marked as noise. If a point has enough neighbors, it is added to the cluster, and its neighbors
- * are also evaluated, recursively expanding the cluster. The function accumulates photon data statistics for the cluster and
- * returns a photonData structure containing the calculated center of mass and total Time over Threshold (ToT) for the cluster.
+ * This function evaluates each new point found within the specified spatial and
+ * temporal thresholds not already assigned to a cluster or marked as noise. If
+ * a point has enough neighbors, it is added to the cluster, and its neighbors
+ * are also evaluated, recursively expanding the cluster. The function accumulates
+ * photon data statistics for the cluster and returns a photonData structure
+ * containing the calculated center of mass and total Time over Threshold (ToT)
+ * for the cluster.
  *
- * @param configParams Configuration parameters including the spatial (epsSpatial) and temporal (epsTemporal) thresholds.
- * @param tpx3FileInfo Contains information about the dataset, such as the number of data packets.
+ * @param configParams Configuration parameters including the spatial
+ * (epsSpatial) and temporal (epsTemporal) thresholds.
+ * @param tpx3FileInfo Contains information about the dataset, such as the
+ * number of data packets.
  * @param signalDataArray Array of signal data points to be clustered.
- * @param homeIndex Index of the seed point from which to start expanding the cluster.
- * @param neighbors Initial list of neighbors of the seed point that meet the density criteria.
+ * @param homeIndex Index of the seed point from which to start expanding the
+ * cluster.
+ * @param neighbors Initial list of neighbors of the seed point that meet the
+ * density criteria.
  * @param clusterId The identifier for the current cluster being expanded.
- * @return photonData Structure containing the photon data statistics for the expanded cluster.
+ * @return photonData Structure containing the photon data statistics for the
+ * expanded cluster.
  */
 photonData expandCluster(configParameters configParams, tpx3FileDiagnostics& tpx3FileInfo, signalData* signalDataArray, size_t homeIndex, std::vector<size_t>& neighbors, size_t clusterId) {
    
@@ -126,24 +142,27 @@ photonData expandCluster(configParameters configParams, tpx3FileDiagnostics& tpx
 
 
 /**
- * @brief Performs the ST_DBSCAN clustering algorithm on a dataset of signal data points.
+ * @brief Performs the ST_DBSCAN clustering algorithm on a dataset of signal
+ * data points.
  *
- * This function segregates Pixel signals (signalType == 2) into clusters based on spatial and temporal
- * closeness according to configuration parameters, marks non-Pixel signals as unprocessed, and identifies
- * noise. Clusters are assigned unique IDs starting from 2, with noise marked as 1, and unprocessed/non-Pixel
- * signals left as 0.
+ * This function segregates Pixel signals (signalType == 2) into clusters based
+ * on spatial and temporal closeness according to configuration parameters,
+ * marks non-Pixel signals as unprocessed, and identifies noise. Clusters are
+ * assigned unique IDs starting from 2, with noise marked as 1, and
+ * unprocessed/non-Pixel signals left as 0.
  *
- * @param configParams Configuration parameters for the DBSCAN algorithm, including spatial and temporal
- *        thresholds (epsSpatial, epsTemporal) and the minimum number of points (minPts) required to form
- *        a cluster.
- * @param tpx3FileInfo File diagnostics information including the total number of data packets
- *        (numberOfDataPackets) to be processed.
- * @param signalDataArray Array of signalData structs representing the dataset for clustering.
+ * @param configParams Configuration parameters for the DBSCAN algorithm,
+ * including spatial and temporal thresholds (epsSpatial, epsTemporal) and the
+ * minimum number of points (minPts) required to form a cluster.
+ * @param tpx3FileInfo File diagnostics information including the total number
+ * of data packets (numberOfDataPackets) to be processed.
+ * @param signalDataArray Array of signalData structs representing the dataset
+ * for clustering.
  *
- * @note The function modifies the `groupID` field of each `signalData` struct in `signalDataArray` to
- *       indicate cluster membership, mark as noise, or leave as unprocessed for non-Pixel signals.
+ * @note The function modifies the `groupID` field of each `signalData` struct
+ * in `signalDataArray` to indicate cluster membership, mark as noise, or leave
+ * as unprocessed for non-Pixel signals.
  */
-
 void ST_DBSCAN(configParameters configParams, tpx3FileDiagnostics& tpx3FileInfo, signalData* signalDataArray) {
     uint32_t clusterId = 2; // Start cluster IDs from 2, reserving 1 for noise
     std::vector<photonData> photons; // Vector to store photon data for each cluster.

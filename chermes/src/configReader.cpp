@@ -17,6 +17,40 @@ std::string grabRunHandle(const std::string& str){
         return (lastDotIndex != std::string::npos) ? str.substr(0, lastDotIndex) : str;
 }
 
+
+/**
+ * @brief Reads configuration parameters from a given file and populates a struct with the configuration values.
+ * 
+ * This function opens a configuration file specified by the filename and reads it line by line. Each line
+ * is expected to contain a key-value pair separated by an '=' character. Lines starting with '#' or containing
+ * '#' are ignored as comments. The function supports setting various configuration parameters specified
+ * by the keys in the file. Invalid or unexpected key-value pairs will generate errors to stderr.
+ * 
+ * Supported configuration parameters include:
+ * - rawTPX3Folder: Folder for raw TPX3 files.
+ * - rawTPX3File: Specific raw TPX3 file name.
+ * - writeRawSignals: Whether to write raw signals (true/false).
+ * - outputFolder: Folder for output files.
+ * - maxBuffersToRead: Maximum number of buffers to read.
+ * - sortSignals: Whether to sort signals (true/false).
+ * - verboseLevel: Level of verbosity in output.
+ * - fillHistgrams: Whether to fill histograms (true/false).
+ * - clusterPixels: Whether to cluster pixels (true/false).
+ * - queryRegion: Region to query (as an integer within uint16_t range).
+ * - writeOutPhotons: Whether to write out photons (true/false).
+ * - epsSpatial: Epsilon spatial value (as an integer within uint8_t range).
+ * - epsTemporal: Epsilon temporal value (as a double).
+ * - minPts: Minimum points value (as an integer within uint8_t range).
+ * 
+ * TODO: refactor this!!!
+ * 
+ * @param filename The path to the configuration file to be read.
+ * @param params Reference to a struct where the configuration parameters will be stored.
+ * @return true if the file was successfully read and parsed; false otherwise.
+ * 
+ * @note The function will print error messages to stderr for any issues encountered while reading the file
+ * or parsing the configuration parameters.
+ */
 bool readConfigFile(const std::string &filename, configParameters &params) {
     std::ifstream configFile(filename); // Attempt to open the configuration file
     std::string line;                   // Container for line
@@ -94,6 +128,17 @@ bool readConfigFile(const std::string &filename, configParameters &params) {
                 std::cerr << ">CONFIG ERROR: Invalid value of '"<< value <<"' for clusterPixels in config file." << std::endl;
                 std::cerr << ">CONFIG ERROR: Expected 'true' or 'false'. Setting to defualt value" << std::endl;
             }
+        } else if (key == "queryRegion") {
+            try {
+                int temp = std::stoi(value); // Convert string to int
+                if (temp >= 0 && temp <= UINT16_MAX) {
+                    params.queryRegion = static_cast<uint16_t>(temp);
+                } else {
+                    std::cerr << "Error: queryRegion value out of uint16_t range: " << value << std::endl;
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "Exception converting queryRegion: " << e.what() << std::endl;
+            }
         } else if (key == "writeOutPhotons") {
             if (value == "true") {
                 params.writeOutPhotons = true;
@@ -102,11 +147,11 @@ bool readConfigFile(const std::string &filename, configParameters &params) {
             } else {
                 std::cerr << ">CONFIG ERROR: Invalid value of '"<< value <<"' for writeOutPhotons in config file." << std::endl;
                 std::cerr << ">CONFIG ERROR: Expected 'true' or 'false'. Setting to defualt value" << std::endl;
-            }
+            } 
         } else if (key == "epsSpatial") {
             try {
                 int temp = std::stoi(value); // Convert string to int
-                if (temp >= 0 && temp <= 255) {
+                if (temp >= 0 && temp <= UINT8_MAX) {
                     params.epsSpatial = static_cast<uint8_t>(temp);
                 } else {
                     std::cerr << "Error: epsSpatial value out of uint8_t range: " << value << std::endl;
@@ -117,8 +162,17 @@ bool readConfigFile(const std::string &filename, configParameters &params) {
         } else if (key == "epsTemporal") {
             params.epsTemporal = std::stod(value);
         } else if (key == "minPts") {
-            params.minPts = static_cast<uint8_t>(std::stoi(value));
-        } 
+            try {
+                int temp = std::stoi(value); // Convert string to int
+                if (temp >= 0 && temp <= UINT8_MAX) {
+                    params.minPts = static_cast<uint8_t>(temp);
+                } else {
+                    std::cerr << "Error: minPts value out of uint8_t range: " << value << std::endl;
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "Exception converting minPts: " << e.what() << std::endl;
+            }
+        }
     }
 
     configFile.close();

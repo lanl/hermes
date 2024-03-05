@@ -23,7 +23,7 @@ struct configParameters {
     uint8_t epsSpatial = 0;
     double epsTemporal = 0;
     uint8_t minPts = 0;
-    uint16_t region = 0;
+    uint16_t queryRegion = 0;
 
     //Diagnostic options
     uint32_t maxBuffersToRead = 0;       // Number of buffer to read in. 0 means read all buffers. 

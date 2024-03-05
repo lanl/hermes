@@ -41,8 +41,8 @@ bool isNeighbor(const signalData& p1, const signalData& p2, double epsSpatial, d
 std::vector<size_t> regionQuery(configParameters configParams, tpx3FileDiagnostics& tpx3FileInfo, signalData* signalDataArray, const size_t homeIndex) {
     
     // Calculate start and end indices to search within, ensuring they stay within bounds of the array
-    size_t startIndex = homeIndex > 150 ? homeIndex - 150 : 0;
-    size_t endIndex = homeIndex + 150 < tpx3FileInfo.numberOfDataPackets ? homeIndex + 150 : tpx3FileInfo.numberOfDataPackets - 1;
+    size_t startIndex = homeIndex > configParams.queryRegion ? homeIndex - configParams.queryRegion : 0;
+    size_t endIndex = homeIndex + configParams.queryRegion < tpx3FileInfo.numberOfDataPackets ? homeIndex + configParams.queryRegion : tpx3FileInfo.numberOfDataPackets - 1;
     
     std::vector<size_t> neighbors;
     for (size_t i = startIndex; i <= endIndex; i++) {

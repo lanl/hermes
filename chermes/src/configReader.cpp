@@ -108,7 +108,6 @@ bool readConfigFile(const std::string &filename, configParameters &params) {
                 int temp = std::stoi(value); // Convert string to int
                 if (temp >= 0 && temp <= 255) {
                     params.epsSpatial = static_cast<uint8_t>(temp);
-                    std::cout << "epsSpatial: " << static_cast<int>(params.epsSpatial) << std::endl;
                 } else {
                     std::cerr << "Error: epsSpatial value out of uint8_t range: " << value << std::endl;
                 }

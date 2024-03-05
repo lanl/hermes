@@ -183,24 +183,18 @@ std::ifstream openTPX3File(const configParameters& configParams, tpx3FileDiagnos
 std::ofstream openRawSignalsOutputFile(const configParameters& configParams) {
     std::ofstream rawSignalsFile;
 
-    // Check if writing raw signals is enabled
-    if (configParams.writeRawSignals) {
-        // Construct the full path to the output file
-        std::string fullOutputPath = configParams.outputFolder + "/" + configParams.runHandle + ".rawsignals";
-        std::cout << "Opening output file for raw signals at path: " << fullOutputPath << std::endl;
+    // Construct the full path to the output file
+    std::string fullOutputPath = configParams.outputFolder + "/" + configParams.runHandle + ".rawsignals";
+    std::cout << "Opening output file for raw signals at path: " << fullOutputPath << std::endl;
 
-        // Attempt to open the output file
-        rawSignalsFile.open(fullOutputPath, std::ios::out | std::ios::binary);
+    // Attempt to open the output file
+    rawSignalsFile.open(fullOutputPath, std::ios::out | std::ios::binary);
 
-        // Check if the file stream is in a good state (i.e., the file has been successfully opened)
-        if (!rawSignalsFile) {
-            // If the file cannot be opened, throw an exception
-            throw std::runtime_error("Unable to open output file for raw signals at path: " + fullOutputPath);
-        }
-    } else {
-        std::cout << "Writing raw signals is disabled." << std::endl;
+    // Check if the file stream is in a good state (i.e., the file has been successfully opened)
+    if (!rawSignalsFile) {
+        // If the file cannot be opened, throw an exception
+        throw std::runtime_error("Unable to open output file for raw signals at path: " + fullOutputPath);
     }
-
     // Return the ofstream object associated with the opened file
     // Note: If writing is disabled, this returns an unopened ofstream, which the caller needs to check
     return rawSignalsFile;
@@ -478,11 +472,14 @@ tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams){
         std::cerr << "Error: " << e.what() << std::endl;
         return {};  // Handle the error as needed, possibly returning an error code or an empty object
     }  
-    // If writeRawSignals is true, Attempt to open the output file for raw signals, if configured to do so
-    try {rawSignalsFile = openRawSignalsOutputFile(configParams);} 
-    catch (const std::runtime_error& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return {}; // Handle the erroras needed, possibly returning an error code or an empty object
+    // If writeRawSignals is true, attempt to open the output file for raw signals
+    if(configParams.writeRawSignals == true){
+    // If writeRawSignals is true, attempt to open the output file for raw signals
+        try {rawSignalsFile = openRawSignalsOutputFile(configParams);} 
+        catch (const std::runtime_error& e) {
+            std::cerr << "Error: " << e.what() << std::endl;
+            return {}; // Handle the erroras needed, possibly returning an error code or an empty object
+        }
     }
 
     // allocate an array for allTpx3Datapackets, store all signals from the entire TPX3File, then close the TPX3 file.  

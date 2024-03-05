@@ -13,12 +13,12 @@ __pycache__
 # ignore any tiff image files
 *.tiff
 *.tif
+*.png
+*.avi
+*.mp4
 
 # ignore any .vscode files
 .vscode/*
 
 # ignore all .o files
 *.o
-
-# ignore all .DS_Store files. 
-.DS_Store

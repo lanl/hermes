@@ -7,7 +7,7 @@ parser = argparse.ArgumentParser(description='Plot pixels in buffer from a file.
 parser.add_argument('buffer_number', type=int, help='Specify the buffer number you\'re interested in')
 args = parser.parse_args()
 
-file_path = 'pixelID.example'       # Define the path to your file
+file_path = '../pixelID.example'       # Define the path to your file
 buffer_number = args.buffer_number  # Use the buffer number passed from command line
 
 # Initiate a pyhermes plotter class

@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import LogNorm
 import matplotlib.animation as animation
-
+import imageio
+import os, re
 
 """
 #------------------------------------------------------------------------------
@@ -99,6 +100,118 @@ class PlotPixelsInSingeBuffer_3D:
         ax.set_xticks([])
         ax.set_yticks([])  # Hide axis ticks for a cleaner image presentation.
 
+
+    def generate_toa_image(self, data, start_toa, end_toa, log=False,):
+        """
+        Generates and saves an image visualizing the Time of Arrival (ToA) for pixels within a specific time bin.
+
+        This function uses the filtered `bin_data` containing pixels for a specific time bin to create a visualization
+        based on their ToA values. The function assumes the existence of `self.data` containing 'x', 'y', and 'ToA'
+        columns to plot.
+
+        @param bin_data: Filtered DataFrame containing data for the current time bin.
+        @return: None. The function directly plots and saves the generated image.
+        """
+        # Assuming bin_data contains columns 'x', 'y', and 'ToA'
+
+        # Initialize a 256x256 array with zeros for ToT integration.
+        image_array = np.zeros((256, 256))
+        for index, row in data.iterrows():
+            x, y, tot = int(row['x_pixel']), int(row['y_pixel']), row['tot']
+            image_array[y, x] += tot  # Accumulate 'tot' values for each pixel position.
+        
+        fig, ax = plt.subplots()  # Create figure and axes directly without checking ax
+        
+        # Choose logarithmic or linear scale based on 'log' parameter.
+        if log:
+            if np.any(image_array > 0):
+                log_norm = LogNorm(vmin=1E-1, vmax=500, clip=True)
+                img = ax.imshow(image_array, cmap='viridis', norm=log_norm, aspect='equal')
+                label = 'Integrated TOT (Log Scale)'
+            else:
+                image_array[image_array == 0] = 1e-1  # Set all zero values to 1E-1
+                log_norm = LogNorm(vmin=1E-1, vmax=500, clip=True)
+                img = ax.imshow(image_array, cmap='viridis', norm=log_norm, aspect='equal')
+                label = 'Integrated TOT (Log Scale)'
+        else:
+            img = ax.imshow(image_array, cmap='viridis', aspect='equal')
+            label = 'Integrated TOT'
+
+        
+        # Configure the plot appearance.
+        start_toa_formatted = '{:.6e}'.format(start_toa)
+        end_toa_formatted = '{:.6e}'.format(end_toa)
+        ax.set_title(f'{self.buffer_number}, ToA: {start_toa_formatted} to {end_toa_formatted}')
+        ax.set_xlabel('X Pixel')
+        ax.set_ylabel('Y Pixel')
+        plt.colorbar(img, label=label)
+        ax.set_xticks([])
+        ax.set_yticks([])  # Hide axis ticks for a cleaner image presentation.
+        
+
+    def compile_images_to_movie(self, output_path, movie_filename):
+        """
+        Compiles the saved images into a movie file.
+
+        This function searches for image files in the specified output directory, reads them in order,
+        and compiles them into a movie file saved with the specified filename.
+
+        @param output_path: The directory path where the images are saved.
+        @param movie_filename: The name of the movie file to be created, including its path.
+        """
+        images = []
+        # Use regular expression to extract numbers from filenames and sort them numerically
+        sorted_files = sorted(os.listdir(output_path), key=lambda x: int(re.findall(r'\d+', x)[0]))
+        for file_name in sorted_files:
+            if file_name.endswith('.png'):
+                file_path = os.path.join(output_path, file_name)
+                images.append(imageio.imread(file_path))
+        imageio.mimsave(movie_filename, images, format='GIF', duration=5)
+
+
+
+    def generate_ToA_Image_Sequence(self, time_bin_size, toa_start, toa_stop, output_path='./'):
+        """
+        Plots pixels in a given time bin for a range of time bins within the buffer and saves the images to a user-defined path.
+
+        @param time_bin_size: The size of each time bin in the same units as the ToA data.
+        @param output_path: The directory path where the images will be saved.
+        @param toa_start: The start Time of Arrival for clipping the dataset.
+        @param toa_stop: The stop Time of Arrival for clipping the dataset.
+        @return: None. The function saves plot images for each time bin in the specified output path and assumes an external method compiles these into a movie.
+        """
+        # Filter the dataset for the specific buffer number to visualize pixel intensities based on ToT.
+        filtered_df = self.df[(self.df['buffer_number'] == self.buffer_number) & (self.df['toa'] >= toa_start) & (self.df['toa'] <= toa_stop)]
+        pixels_df = filtered_df[filtered_df['signal_type'] == 'Pixel']
+
+        # Calculate min and max ToA to define time bins
+        min_toa = pixels_df['toa'].min()
+        max_toa = pixels_df['toa'].max()
+        total_toa_range = max_toa - min_toa
+        initial_num_toas = total_toa_range / time_bin_size
+        
+        # Adjust time_bin_size if num_toas exceeds 1000
+        if initial_num_toas > 1000:
+            print(f"Number of images to generate is {initial_num_toas}! Recalculating bin size to limit total number of images to 1000")
+            time_bin_size = total_toa_range / 1000  # Recalculate time_bin_size to ensure 1000 bins
+            num_toas = 1000
+        else:
+            num_toas = initial_num_toas
+        
+        # Iterate over time bins using the (possibly adjusted) time_bin_size
+        for i in range(int(num_toas)):
+            start_toa_bin = min_toa + i * time_bin_size
+            end_toa_bin = start_toa_bin + time_bin_size
+            bin_data = pixels_df[(pixels_df['toa'] >= start_toa_bin) & (pixels_df['toa'] < end_toa_bin)]
+            # Now pass start_toa and end_toa to the function
+            self.generate_toa_image(data=bin_data, start_toa=start_toa_bin, end_toa=end_toa_bin,log=True)
+            plt.savefig(f'{output_path}/bin_{i}.png')
+            plt.clf()
+            plt.close()
+
+
+        # After all bins are plotted and saved, compile them into a movie
+        self.compile_images_to_movie(output_path=output_path,movie_filename='rawTPX3.tiff')
 
 
         

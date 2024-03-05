@@ -80,7 +80,7 @@ void sortSignals(const configParameters& configParams, signalData* signalDataArr
     // Grab stop time, calculate buffer sort duration, and append to total sorting time.
     auto stopSortTime = std::chrono::high_resolution_clock::now();
     bufferSortTime = stopSortTime - startSortTime;
-    tpx3FileInfo.totalSortingTime = tpx3FileInfo.totalSortingTime + bufferSortTime.count();
+    tpx3FileInfo.totalSortingTime = bufferSortTime.count();
 }
 
 
@@ -110,7 +110,7 @@ void clusterSignals(const configParameters& configParams, signalData* signalData
 
     auto stopClusterTime = std::chrono::high_resolution_clock::now();
     bufferClusterTime = stopClusterTime - startClusterTime;
-    tpx3FileInfo.totalClusteringTime += bufferClusterTime.count();
+    tpx3FileInfo.totalClusteringTime = bufferClusterTime.count();
 }
 
 
@@ -224,8 +224,8 @@ void writeRawSignals(const configParameters& configParams, std::ofstream& rawSig
 
     // Calculate and update the total writing time
     auto stopWriteTime = std::chrono::high_resolution_clock::now();
-    auto bufferWriteTime = std::chrono::duration_cast<std::chrono::milliseconds>(stopWriteTime - startWriteTime).count();
-    tpx3FileInfo.totalWritingTime += bufferWriteTime;
+    bufferWriteTime = stopWriteTime - startWriteTime;
+    tpx3FileInfo.totalWritingTime = bufferWriteTime.count();
 }
 
 
@@ -335,7 +335,7 @@ void processGlobalTimePacket(uint64_t datapacket, signalData &signalData) {
 }
 
 
-void processDataPackets(const configParameters& configParams, tpx3FileDiagnostics& tpx3FileInfo, const uint64_t* dataPackets, signalData* signalDataArray, size_t numberOfDataPackets) {
+void processDataPackets(const configParameters& configParams, tpx3FileDiagnostics& tpx3FileInfo, const uint64_t* dataPackets, signalData* signalDataArray) {
     
     // Grab a START time for unpacking
     auto startUnpackTime = std::chrono::high_resolution_clock::now(); 
@@ -346,10 +346,10 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
     memcpy(&tpx3Signature, tpx3SignatureStr, sizeof(uint32_t));
 
     // Initialize the counter outside the while loop
-    uint64_t currentPacket = 0; 
-    
+    size_t currentPacket = 0; 
+
     // Continue to loop through datapacket array until you hit the numberOfDataPackets 
-    while (currentPacket < tpx3FileInfo.numberOfDataPackets) {
+    while (currentPacket < configParams.maxPacketsToRead) {
         // Grab last 32 bits of current packt
         uint32_t tpx3flag = static_cast<uint32_t>(dataPackets[currentPacket]);
 
@@ -482,21 +482,31 @@ tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams){
         }
     }
 
-    // allocate an array for allTpx3Datapackets, store all signals from the entire TPX3File, then close the TPX3 file.  
-    uint64_t* allTpx3Datapackets = new uint64_t [tpx3FileInfo.numberOfDataPackets];
-    tpx3File.read((char*) allTpx3Datapackets, tpx3FileInfo.filesize);
+    // Ensure maxPacketsToRead does not exceed the total number of available packets
+    size_t packetsToRead = std::min(static_cast<size_t>(configParams.maxPacketsToRead), static_cast<size_t>(tpx3FileInfo.numberOfDataPackets));
+
+    // Allocate an array for tpx3DataPackets to store signals up to the maxPacketsToRead from the TPX3 file
+    uint64_t* tpx3DataPackets = new uint64_t[packetsToRead];
+    
+    // Calculate the number of bytes to read based on the number of packets
+    size_t bytesToRead = packetsToRead * sizeof(uint64_t);
+    
+    // Read the calculated number of bytes from the TPX3 file
+    tpx3File.read((char*)tpx3DataPackets, bytesToRead);
     tpx3File.close();
 
+    
     // allocate an array of signalData called signalDataArray that is the same size as bufferSize//8
-    signalData* signalDataArray = new signalData[tpx3FileInfo.numberOfDataPackets];
-
-    processDataPackets(configParams, tpx3FileInfo,  allTpx3Datapackets, signalDataArray, tpx3FileInfo.numberOfDataPackets);
+    signalData* signalDataArray = new signalData[packetsToRead];
+    
+    processDataPackets(configParams, tpx3FileInfo,  tpx3DataPackets, signalDataArray);
 
     if (configParams.sortSignals){sortSignals(configParams, signalDataArray, tpx3FileInfo);}        // If sortSingnals is true then sort!! 
     if (configParams.writeRawSignals){writeRawSignals(configParams, rawSignalsFile, signalDataArray, tpx3FileInfo);}    // If writeRawSignals is true then write out binary
     if (configParams.clusterPixels){clusterSignals(configParams, signalDataArray, tpx3FileInfo);}
+    
 
-    delete[] allTpx3Datapackets;    // Don't forget to free the allocated memory
+    delete[] tpx3DataPackets;    // Don't forget to free the allocated memory
     delete[] signalDataArray;       // Assuming you're done with signalDataArray
     return tpx3FileInfo;            // Return the tpx3file info. 
 }

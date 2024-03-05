@@ -96,6 +96,8 @@ photonData expandCluster(configParameters configParams, tpx3FileDiagnostics& tpx
     float weightedSumY = signalDataArray[homeIndex].yPixel * signalDataArray[homeIndex].TotFinal;
     double weightedSumToA = signalDataArray[homeIndex].ToaFinal * signalDataArray[homeIndex].TotFinal;
     uint16_t totalToT = signalDataArray[homeIndex].TotFinal;
+    size_t pixelCount = 1; // Initialize pixel count, starting with the seed point itself
+
 
     // Use a queue to iteratively process each neighbor and its neighbors
     size_t index = 0;
@@ -104,13 +106,15 @@ photonData expandCluster(configParameters configParams, tpx3FileDiagnostics& tpx
 
         // Skip non-Pixel signals
         if (signalDataArray[qIndex].signalType != 2) {
-            ++index; // Move to the next neighbor
-            continue; // Skip the rest of the iteration in this loop
+            //TODO Figure out if I need to ++index
+            ++index;    // Move to the next neighbor, even if the current one is skipped   
+            continue;   // Skip the rest of the iteration in this loop
         }
 
         // Only process points that haven't been assigned to a cluster or marked as noise
-        if (signalDataArray[qIndex].groupID == 0) { // Includes unvisited and noise (groupID = -1)
+        if (signalDataArray[qIndex].groupID == 0) { 
             signalDataArray[qIndex].groupID = clusterId; // Mark as part of the current cluster
+            pixelCount++; // Increment the count of pixels contributing to the photon
 
             // Find neighbors of this point
             std::vector<size_t> qNeighbors = regionQuery(configParams, tpx3FileInfo, signalDataArray, qIndex);
@@ -131,10 +135,11 @@ photonData expandCluster(configParameters configParams, tpx3FileDiagnostics& tpx
     }
 
     // Calculate and store the cluster's center of mass and total ToT
-    pd.photon_x = weightedSumX / totalToT;
-    pd.photon_y = weightedSumY / totalToT;
-    pd.photon_toa = weightedSumToA / totalToT;
-    pd.integrated_tot = totalToT;
+    pd.photonX = weightedSumX / totalToT;
+    pd.photonY = weightedSumY / totalToT;
+    pd.photonToa = weightedSumToA / totalToT;
+    pd.integratedTot = totalToT;
+    pd.multiplicity = pixelCount;
 
     return pd;
 }

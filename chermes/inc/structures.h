@@ -65,10 +65,10 @@ struct signalData {
 
 // Represents the data for a single reconstructed photon.
 struct photonData{
-    float photon_x = 0;
-    float photon_y = 0;
-    double photon_toa = 0;
-    uint16_t integrated_tot = 0;
+    float photonX = 0;
+    float photonY = 0;
+    double photonToa = 0;
+    uint16_t integratedTot = 0;
     uint8_t multiplicity = 0;
 };
 

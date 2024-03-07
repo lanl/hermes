@@ -5,26 +5,40 @@
 HERMES is a repository of python and C/C++ libraries that are meant to acquire, process, and analyze, data from the TPX3Cam by [Amsterdam Scientific Instruments](https://www.amscins.com/buy-here/tpx3cam/ "ASI TPX3Cam"). It is capable of both aqcuiring and processing raw .tpx3 files.  
 
 ## Getting Started ## 
-To use HERMES, you must first set an environment variable specific to your operating system.
+Before using HERMES, ensure your system meets the necessary requirements and set up the environment variable for a seamless experience.
+
+### Prerequisites ###
+
+- [pyHERMES] Python 3.8 or later
+- [cHERMES] C/C++ Compiler (GCC for Linux/MacOS, MSVC for Windows)
+- [cHERMES] CMake 3.15 or higher
 
 ### Setting the Environment Variable ###
 
-**For Windows Users:**
+**Windows Users:**
 
-1. Open the Start Search, type in "env", and choose "Edit the system environment variables"
-2. In the System Properties window, click on the "Environment Variables..." button
-3. In the Environment Variables window, click on "New..." under the "User variables" section
-4. For the Variable name, enter `HERMES_HOME`
-5. For the Variable value, enter the path to your HERMES installation directory
-6. Click OK and Apply the changes
+1. Search for "Edit the system environment variables" and open it.
+2. Click "Environment Variables."
+3. Under "User variables," click "New."
+4. Set the Variable name to `HERMES_HOME`.
+5. Set the Variable value to the path of your HERMES installation.
+6. Click OK to save.
 
-**For macOS/Linux Users:**
+**macOS/Linux Users:**
 
-Open a terminal and add the following line to your `.bashrc`, `.zshrc`, or equivalent shell configuration file:
+1. Open your shell profile file (`.bashrc`, `.zshrc`, etc.).
+2. Add `export HERMES_HOME=/path/to/hermes`.
+3. Replace `/path/to/hermes` with your installation path.
+4. Save the file and apply changes with `source ~/.bashrc` or equivalent.
 
-```sh
-export HERMES_HOME=/path/to/your/hermes/installation
-```
+### Verifying Installation ###
+
+To verify the environment variable:
+
+**Windows:**
+
+```cmd
+echo %HERMES_HOME%
 
 ## License ## 
 HERMES is distributed as open-source software under an MIT License, with LANL open source approval (reference O4660). Please see LICENSE for more details. 

@@ -10,6 +10,7 @@ Before using HERMES, ensure your system meets the necessary requirements and set
 
 ### Prerequisites ###
 Below are instructions for installing prerequisites on Linux/macOS and Windows.
+
 **Note** HERMES has not been tested on any Windows systems directly, though it has been used successfully in WSL2 with ubuntu. 
 
 #### PyHERMES Prerequisite Installation Options ####
@@ -69,6 +70,13 @@ cHERMES requires a C/C++ Compiler, along with CMake 3.15 or higher.
 
 ### Setting the Environment Variable ###
 
+**macOS/Linux Users:**
+
+1. Open your shell profile file (`.bashrc`, `.zshrc`, etc.).
+2. Add `export HERMES_HOME=/path/to/hermes`.
+3. Replace `/path/to/hermes` with your installation path.
+4. Save the file and apply changes with `source ~/.bashrc` or equivalent.
+
 **Windows Users:**
 
 1. Search for "Edit the system environment variables" and open it.
@@ -78,26 +86,20 @@ cHERMES requires a C/C++ Compiler, along with CMake 3.15 or higher.
 5. Set the Variable value to the path of your HERMES installation.
 6. Click OK to save.
 
-**macOS/Linux Users:**
-
-1. Open your shell profile file (`.bashrc`, `.zshrc`, etc.).
-2. Add `export HERMES_HOME=/path/to/hermes`.
-3. Replace `/path/to/hermes` with your installation path.
-4. Save the file and apply changes with `source ~/.bashrc` or equivalent.
 
 ### Verifying Installation ###
 
 To verify the environment variable:
 
+**macOS/Linux Users:**
+```sh
+echo $HERMES_HOME
+```
+
 **Windows:**
 
 ```cmd
 echo %HERMES_HOME%
-```
-
-**macOS/Linux Users:**
-```sh
-echo $HERMES_HOME
 ```
 
 

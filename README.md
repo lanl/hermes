@@ -9,9 +9,54 @@ Before using HERMES, ensure your system meets the necessary requirements and set
 
 ### Prerequisites ###
 
-- [pyHERMES] Python 3.8 or later
-- [cHERMES] C/C++ Compiler (GCC for Linux/MacOS, MSVC for Windows)
-- [cHERMES] CMake 3.15 or higher
+HERMES requires Python 3.8 or later, a C/C++ Compiler, and CMake 3.15 or higher. Below are instructions for installing these prerequisites on Windows and Linux/macOS.
+
+#### Windows ####
+
+1. **Python 3.8 or later:**
+   - Download and install Python from [https://www.python.org/downloads/](https://www.python.org/downloads/). Ensure you check the option to 'Add Python to PATH' during installation.
+
+2. **Microsoft C++ Build Tools:**
+   - Download and install the Build Tools for Visual Studio from [https://visualstudio.microsoft.com/visual-cpp-build-tools/](https://visualstudio.microsoft.com/visual-cpp-build-tools/). During installation, select the "C++ build tools" workload.
+
+3. **CMake:**
+   - Download and install CMake from [https://cmake.org/download/](https://cmake.org/download/). During installation, ensure you add CMake to the system PATH.
+
+#### Linux/macOS ####
+
+1. **Python 3.8 or later:**
+   - Install Python using your distribution's package manager (e.g., `apt` on Ubuntu, `brew` on macOS).
+     ```sh
+     # Ubuntu/Debian
+     sudo apt-get update
+     sudo apt-get install python3.8
+     ```
+     ```sh
+     # macOS
+     brew install python@3.8
+     ```
+
+2. **GCC/G++ (Linux) or Xcode Command Line Tools (macOS):**
+   - Linux:
+     ```sh
+     sudo apt-get install build-essential
+     ```
+   - macOS:
+     - Install Xcode from the App Store, then open Terminal and run:
+       ```sh
+       xcode-select --install
+       ```
+
+3. **CMake:**
+   - Install CMake using your package manager or from [https://cmake.org/download/](https://cmake.org/download/).
+     ```sh
+     # Ubuntu/Debian
+     sudo apt-get install cmake
+     ```
+     ```sh
+     # macOS
+     brew install cmake
+     ```
 
 ### Setting the Environment Variable ###
 

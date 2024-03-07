@@ -2,7 +2,7 @@
 # HERMES: High-speed Event Retrieval and Management for Enhanced Spectral neutron imaging with TPX3Cams #
 
 ## What is HERMES? ##
-HERMES is a repository of python and C/C++ libraries that are meant to acquire, process, and analyze, data from the TPX3Cam by [Amsterdam Scientific Instruments](https://www.amscins.com/buy-here/tpx3cam/ "ASI TPX3Cam"). It is capable of both aqcuiring and processing raw .tpx3 files. 
+HERMES comprises a set of Python and C/C++ libraries (not a standalone program) designed to support the development of custom code for acquiring, processing, and analyzing data from the TPX3Cam manufactured by [Amsterdam Scientific Instruments](https://www.amscins.com/buy-here/tpx3cam/ "ASI TPX3Cam"). HERMES' primary function is provide the foundational tools needed for users to create applications tailored to their specific requirements in energy-resolved neutron imaging with TPX3Cams, along with it's subsequent analysis. With HERMES users have access to a flexible framework that simplifies the integration of TPX3Cam's capabilities into their projects, while also providing the needed diagnostics for development and trouble shooting. 
 
 ## Getting Started ## 
 Before using HERMES, ensure your system meets the necessary requirements and set up the environment variable for a seamless experience.

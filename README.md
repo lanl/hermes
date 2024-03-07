@@ -11,6 +11,7 @@ Before using HERMES, ensure your system meets the necessary requirements and set
 ### Prerequisites ###
 Below are instructions for installing prerequisites on Linux/macOS and Windows.  
 **Note** HERMES has not been tested on any Windows systems directly, though it has been used successfully in WSL2 with ubuntu.  
+
 #### PyHERMES Prerequisite Installation Options ####
 pyHERMES requires Python 3.8 or later. Python can be obtained directly via download or by a third party platform like Anaconda3, apt-get, Homebrew. 
 1. **Direct Installation:**
@@ -67,23 +68,38 @@ cHERMES requires a C/C++ Compiler, along with CMake 3.15 or higher.
 
 
 ### Setting the Environment Variable ###
+HERMES requires setting up the `HERMES_HOME` environment variable as well as additional variables for `cHERMES` and `pyHERMES`. These steps ensure that both the C/C++ libraries and Python modules are correctly recognized by your system.
 
 **macOS/Linux Users:**
-
 1. Open your shell profile file (`.bashrc`, `.zshrc`, etc.).
-2. Add `export HERMES_HOME=/path/to/hermes`.
-3. Replace `/path/to/hermes` with your installation path.
-4. Save the file and apply changes with `source ~/.bashrc` or equivalent.
+2. Add the following lines to set `HERMES_HOME` and the additional variables:
+   ```sh
+   export HERMES_HOME=/path/to/hermes
+   export cHERMES_DIR=$HERMES_HOME/cHERMES
+   export PYTHONPATH=$PYTHONPATH:$HERMES_HOME/pyHERMES
+   ```
+3. Replace /path/to/hermes with the actual installation path of HERMES on your machine.
+4. Save the file.
+5. Apply the changes by running 
+```sh 
+    source ~/.bashrc # or the equivalent command for your shell
+```
 
 **Windows Users:**
 
 1. Search for "Edit the system environment variables" and open it.
 2. Click "Environment Variables."
-3. Under "User variables," click "New."
-4. Set the Variable name to `HERMES_HOME`.
-5. Set the Variable value to the path of your HERMES installation.
-6. Click OK to save.
+3. To set `HERMES_HOME`, under "User variables," click "New."
+    - Set the Variable name to `HERMES_HOME`.
+    - Set the Variable value to the path of your HERMES installation.
+4. To set `cHERMES_DIR`, repeat the process to add a new User variable:
+    - Set the Variable name to `cHERMES_DIR`.
+    - Set the Variable value to `%HERMES_HOME%\cHERMES`.
+5. To add `pyHERMES` to the Python path, find the Path variable under "User variables" (or "System variables" if you want it available system-wide) and edit it:
+    - Click "New" and add `%HERMES_HOME%\pyHERMES`.
+6. Click OK to save each variable.
 
+These environment variable settings ensure that the system can properly locate and utilize the `cHERMES` and `pyHERMES` libraries. `HERMES_HOME` serves as the base directory for the entire HERMES suite, while `cHERMES_DIR` and the addition of `pyHERMES` to the `PYTHONPATH` enable specific functionality within the HERMES ecosystem
 
 ### Verifying Installation ###
 
@@ -99,6 +115,8 @@ echo $HERMES_HOME
 ```cmd
 echo %HERMES_HOME%
 ```
+
+### Starting with some Examples ###
 
 
 ## License ## 

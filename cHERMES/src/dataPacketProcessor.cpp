@@ -8,7 +8,7 @@
 
 using namespace std;
 
-const double NANOSECS = 1E-9;
+const double nanoSecondsToSeconds = 1E-9;
 
 // Some global variables, constants, and containers
 unsigned long long fileLength;
@@ -23,15 +23,15 @@ double global_timestamp;
 int trigger_counter;
 unsigned long long int timemaster;
 double TDC_timestamp;
-double spidrTimens;
+double spidrTimeInNs;
 int x, y;
 double timeOverThresholdNS;
 double timeOfArrivalNS;
-long dcol;
-long spix;
+long dCol;
+long sPix;
 long pix;
 unsigned short timeOverThreshold, timeOfArrival;
-char chipnr, fineTimeOfArrival;
+char fineTimeOfArrival;
 int frameNr;
 int coarseTimeOfArrival;
 int mode;
@@ -42,7 +42,6 @@ uint16_t timeStampHigh_107sClock = 0;
 uint16_t spidrTime = 0;
 unsigned long Timer_LSB32 = 0;
 unsigned long Timer_MSB16 = 0;
-unsigned long numofTDC=0;
 
 // Some buffer timing info for diagnostics
 std::chrono::duration<double> bufferUnpackTime;
@@ -184,7 +183,7 @@ std::ofstream openRawSignalsOutputFile(const configParameters& configParams) {
     std::ofstream rawSignalsFile;
 
     // Construct the full path to the output file
-    std::string fullOutputPath = configParams.outputFolder + "/" + configParams.runHandle + ".rawsignals";
+    std::string fullOutputPath = configParams.outputFolder + "/" + configParams.runHandle + ".rawSignals";
     std::cout << "Opening output file for raw signals at path: " << fullOutputPath << std::endl;
 
     // Attempt to open the output file
@@ -252,7 +251,7 @@ void processTDCPacket(unsigned long long dataPacket, signalData &signalData) {
     signalData.signalType = 1;
 	signalData.xPixel = 0;
 	signalData.yPixel = 0;
-	signalData.ToaFinal = coarseTime*25*NANOSECS + trigTimeFine*timeUnit*NANOSECS;
+	signalData.ToaFinal = coarseTime*25*nanoSecondsToSeconds + trigTimeFine*timeUnit*nanoSecondsToSeconds;
 	signalData.TotFinal = 0;
 }
 
@@ -272,19 +271,19 @@ void processTDCPacket(unsigned long long dataPacket, signalData &signalData) {
 void processPixelPacket(unsigned long long dataPacket, signalData &signalData) {
     // Unpack dataPacket
     spidrTime = (unsigned short)(dataPacket & 0xffff);
-    dcol = (dataPacket & 0x0FE0000000000000L) >> 52;                                                                  
-    spix = (dataPacket & 0x001F800000000000L) >> 45;                                                                    
+    dCol = (dataPacket & 0x0FE0000000000000L) >> 52;                                                                  
+    sPix = (dataPacket & 0x001F800000000000L) >> 45;                                                                    
     pix = (dataPacket & 0x0000700000000000L) >> 44;
-    x = (int)(dcol + pix / 4);
-    y = (int)(spix + (pix & 0x3));
+    x = (int)(dCol + pix / 4);
+    y = (int)(sPix + (pix & 0x3));
     timeOfArrival = (unsigned short)((dataPacket >> (16 + 14)) & 0x3fff);   
     timeOverThreshold = (unsigned short)((dataPacket >> (16 + 4)) & 0x3ff);	
     fineTimeOfArrival = (unsigned char)((dataPacket >> 16) & 0xf);
     coarseTimeOfArrival = (timeOfArrival << 4) | (~fineTimeOfArrival & 0xf);
-    spidrTimens = spidrTime * 25.0 * 16384.0;
+    spidrTimeInNs = spidrTime * 25.0 * 16384.0;
     //timeOfArrivalNS = timeOfArrival * 25.0;
     timeOverThresholdNS = timeOverThreshold * 25.0;	
-    global_timestamp = spidrTimens + coarseTimeOfArrival * (25.0 / 16);
+    global_timestamp = spidrTimeInNs + coarseTimeOfArrival * (25.0 / 16);
     
     // Set info in signalData 
     signalData.signalType = 2;
@@ -512,13 +511,18 @@ tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams){
     // allocate an array of signalData called signalDataArray that is the same size as bufferSize//8
     signalData* signalDataArray = new signalData[packetsToRead];
     
+    // Process the data packets and fill the signalDataArray
     processDataPackets(configParams, tpx3FileInfo,  tpx3DataPackets, signalDataArray);
 
-    if (configParams.sortSignals){sortSignals(configParams, signalDataArray, tpx3FileInfo);}        // If sortSignals is true then sort!! 
-    if (configParams.writeRawSignals){writeRawSignals(configParams, rawSignalsFile, signalDataArray, tpx3FileInfo);}    // If writeRawSignals is true then write out binary
+    // If sortSignals is true then sort!! 
+    if (configParams.sortSignals){sortSignals(configParams, signalDataArray, tpx3FileInfo);}        
+
+    // If writeRawSignals is true then write out binary
+    if (configParams.writeRawSignals){writeRawSignals(configParams, rawSignalsFile, signalDataArray, tpx3FileInfo);}   
+
+    // If clusterPixels is true, then cluster signals
     if (configParams.clusterPixels){clusterSignals(configParams, signalDataArray, tpx3FileInfo);}
     
-
     delete[] tpx3DataPackets;   // Don't forget to free the allocated memory
     delete[] signalDataArray;   // Assuming you're done with signalDataArray
     return tpx3FileInfo;        // Return the tpx3file info. 

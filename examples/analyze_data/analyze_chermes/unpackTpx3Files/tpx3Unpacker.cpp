@@ -31,10 +31,10 @@ int main(int argc, char *argv[]){
         return 1; // Exit the program with an error code
     } 
 
-    // Print out config parameters based on vebosity level
+    // Print out config parameters based on verbosity level
     if(configParams.verboseLevel>=2){printParameters(configParams);}
     
-    //tpxFileInfo = unpackandSortTPX3FileInSequentialBuffers(configParams);
+    //tpxFileInfo = unpackAndSortTPX3FileInSequentialBuffers(configParams);
     tpxFileInfo = unpackAndSortTPX3File(configParams);
 
     auto hermesStopTime = std::chrono::high_resolution_clock::now();

@@ -57,7 +57,7 @@ void logConfigError(const std::string& key, const std::string& value, const std:
  * - maxBuffersToRead: Maximum number of buffers to read.
  * - sortSignals: Whether to sort signals (true/false).
  * - verboseLevel: Level of verbosity in output.
- * - fillHistgrams: Whether to fill histograms (true/false).
+ * - fillHistograms: Whether to fill histograms (true/false).
  * - clusterPixels: Whether to cluster pixels (true/false).
  * - queryRegion: Region to query (as an integer within uint16_t range).
  * - writeOutPhotons: Whether to write out photons (true/false).
@@ -100,16 +100,16 @@ bool readConfigFile(const std::string &filename, configParameters &params) {
             }
             else if (key == "writeRawSignals") params.writeRawSignals = stringToBool(value);
             else if (key == "outputFolder") params.outputFolder = value;
-            else if (key == "maxPacketsToRead") params.maxPacketsToRead = stringToNumber<int>(value);
             else if (key == "sortSignals") params.sortSignals = stringToBool(value);
             else if (key == "verboseLevel") params.verboseLevel = stringToNumber<int>(value);
-            else if (key == "fillHistgrams") params.fillHistgrams = stringToBool(value);
+            else if (key == "fillHistograms") params.fillHistograms = stringToBool(value);
             else if (key == "clusterPixels") params.clusterPixels = stringToBool(value);
             else if (key == "queryRegion") params.queryRegion = static_cast<uint16_t>(stringToNumber<int>(value));
             else if (key == "writeOutPhotons") params.writeOutPhotons = stringToBool(value);
             else if (key == "epsSpatial") params.epsSpatial = static_cast<uint8_t>(stringToNumber<int>(value));
             else if (key == "epsTemporal") params.epsTemporal = stringToNumber<double>(value);
             else if (key == "minPts") params.minPts = static_cast<uint8_t>(stringToNumber<int>(value));
+            else if (key == "maxPacketsToRead") params.maxPacketsToRead = stringToNumber<int>(value);
             else std::cerr << "Unknown configuration key: " << key << std::endl;
         } catch (const std::exception& e) {
             logConfigError(key, value, e.what());
@@ -130,7 +130,7 @@ void printParameters(const configParameters &params) {
     std::cout << "maxPacketsToRead: " << params.maxPacketsToRead << std::endl;
     std::cout << "sortSignals: " << (params.sortSignals ? "true" : "false") << std::endl;
     std::cout << "verboseLevel: " << params.verboseLevel << std::endl;
-    std::cout << "fillHistgrams: " << (params.fillHistgrams ? "true" : "false") << std::endl;
+    std::cout << "fillHistograms: " << (params.fillHistograms ? "true" : "false") << std::endl;
     std::cout << "clusterPixels: " << (params.clusterPixels ? "true" : "false") << std::endl;
     std::cout << "writeOutPhotons: " << (params.writeOutPhotons ? "true" : "false") << std::endl;
     std::cout << "epsSpatial: " << static_cast<int>(params.epsSpatial) << std::endl;

@@ -27,7 +27,7 @@ struct configParameters {
 
     //Diagnostic options
     uint32_t maxPacketsToRead = 0;  // Number of buffer to read in. 0 means read all buffers. 
-    bool fillHistgrams = false;     // Flag to fill histograms
+    bool fillHistograms = false;     // Flag to fill histograms
     int verboseLevel = 1;           // Verbosity Level
                                     // 1 = General file input/output
                                     // 2 = Config and event diagnostics

@@ -16,7 +16,7 @@ unsigned long long NumofPackets;
 
 // TODO: Fix this! Possibly make it into a structure that is inherited 
 double coarseTime;
-unsigned long tmpfine;
+unsigned long tmpFine;
 unsigned long trigTimeFine;
 double timeUnit = 25. / 4096; 
 double global_timestamp;
@@ -72,7 +72,7 @@ void sortSignals(const configParameters& configParams, signalData* signalDataArr
     auto startSortTime = std::chrono::high_resolution_clock::now(); // Grab a start time for sorting
         
     // Print info depending on verbosity level
-    if (configParams.verboseLevel>=3) {std::cout <<"Sorting raw signal data. " << std::endl;}
+    if (configParams.verboseLevel>=2) {std::cout <<"Sorting raw signal data. " << std::endl;}
 
     // Sort the signalDataArray based on ToaFinal
     std::sort(signalDataArray, signalDataArray + tpx3FileInfo.numberOfDataPackets,[](const signalData &a, const signalData &b) -> bool {return a.ToaFinal < b.ToaFinal;});
@@ -81,7 +81,7 @@ void sortSignals(const configParameters& configParams, signalData* signalDataArr
     auto stopSortTime = std::chrono::high_resolution_clock::now();
     bufferSortTime = stopSortTime - startSortTime;
     tpx3FileInfo.totalSortingTime = bufferSortTime.count();
-    if (configParams.verboseLevel>=3) {std::cout <<"Finished sorting all "<< tpx3FileInfo.numberOfDataPackets << " signal data. " << std::endl;}
+    if (configParams.verboseLevel>=2) {std::cout <<"Finished sorting all "<< tpx3FileInfo.numberOfDataPackets << " signal data. " << std::endl;}
 }
 
 
@@ -100,9 +100,7 @@ void sortSignals(const configParameters& configParams, signalData* signalDataArr
  */
 
 void clusterSignals(const configParameters& configParams, signalData* signalDataArray, tpx3FileDiagnostics& tpx3FileInfo) {
-    if (configParams.verboseLevel >= 3) {
-        std::cout << "Clustering pixels based on DBSCAN " << std::endl;
-    }
+    if (configParams.verboseLevel >= 2) {std::cout << "Clustering pixels based on DBSCAN " << std::endl;}
 
     auto startClusterTime = std::chrono::high_resolution_clock::now();
     
@@ -112,6 +110,7 @@ void clusterSignals(const configParameters& configParams, signalData* signalData
     auto stopClusterTime = std::chrono::high_resolution_clock::now();
     bufferClusterTime = stopClusterTime - startClusterTime;
     tpx3FileInfo.totalClusteringTime = bufferClusterTime.count();
+    if (configParams.verboseLevel >= 2) {std::cout << "Finished clustering of all " << tpx3FileInfo.numberOfDataPackets << "pixels based on DBSCAN " << std::endl;}
 }
 
 
@@ -233,21 +232,21 @@ void writeRawSignals(const configParameters& configParams, std::ofstream& rawSig
 /**
  * @brief Takes a TDC data packet from a tpx3 file, processes it, and updates the corresponding signal data structure. 
  *
- * This function takes the data packet pass through unsigned long long datapacket and processes the timing of 
- * the TDC trigger. It then update the corresponding signalData structure, which is passed by refference. 
+ * This function takes the data packet pass through unsigned long long dataPacket and processes the timing of 
+ * the TDC trigger. It then update the corresponding signalData structure, which is passed by reference. 
  * 
- * @param datapacket     64 btye data packet that contains raw timing info
+ * @param dataPacket    64 byte data packet that contains raw timing info
  * @param signalData    HERMES defined structure that contain raw data info from data packets.
  * @return nothing
  */
-void processTDCPacket(unsigned long long datapacket, signalData &signalData) {
+void processTDCPacket(unsigned long long dataPacket, signalData &signalData) {
     // Logic for TDC packet
 
-	// Unpack datapacket
-	coarseTime = (datapacket >> 12) & 0xFFFFFFFF;                        
-	tmpfine = (datapacket >> 5) & 0xF; 
-	tmpfine = ((tmpfine - 1) << 9) / 12;
-	trigTimeFine = (datapacket & 0x0000000000000E00) | (tmpfine & 0x00000000000001FF);
+	// Unpack dataPacket
+	coarseTime = (dataPacket >> 12) & 0xFFFFFFFF;                        
+	tmpFine = (dataPacket >> 5) & 0xF; 
+	tmpFine = ((tmpFine - 1) << 9) / 12;
+	trigTimeFine = (dataPacket & 0x0000000000000E00) | (tmpFine & 0x00000000000001FF);
 
 	// Set info in signalData 
     signalData.signalType = 1;
@@ -261,26 +260,26 @@ void processTDCPacket(unsigned long long datapacket, signalData &signalData) {
 /**
  * @brief Takes a Pixel data packet from a tpx3 file, processes it, and updates the corresponding signal data structure. 
  *
- * This function takes the data packet pass through unsigned long long datapacket and processes the timing and position of 
- * the Pixel hit. It then update the corresponding signalData structure, which is passed by refference. 
+ * This function takes the data packet pass through unsigned long long dataPacket and processes the timing and position of 
+ * the Pixel hit. It then update the corresponding signalData structure, which is passed by reference. 
  * 
  * TODO: I need to rewrite this for clarity. 
  * 
- * @param datapacket     64 btye data packet that contains raw timing info
+ * @param dataPacket    64 byte data packet that contains raw timing info
  * @param signalData    HERMES defined structure that contain raw data info from data packets.
  * @return nothing
  */ 
-void processPixelPacket(unsigned long long datapacket, signalData &signalData) {
-    // Unpack datapacket
-    spidrTime = (unsigned short)(datapacket & 0xffff);
-    dcol = (datapacket & 0x0FE0000000000000L) >> 52;                                                                  
-    spix = (datapacket & 0x001F800000000000L) >> 45;                                                                    
-    pix = (datapacket & 0x0000700000000000L) >> 44;
+void processPixelPacket(unsigned long long dataPacket, signalData &signalData) {
+    // Unpack dataPacket
+    spidrTime = (unsigned short)(dataPacket & 0xffff);
+    dcol = (dataPacket & 0x0FE0000000000000L) >> 52;                                                                  
+    spix = (dataPacket & 0x001F800000000000L) >> 45;                                                                    
+    pix = (dataPacket & 0x0000700000000000L) >> 44;
     x = (int)(dcol + pix / 4);
     y = (int)(spix + (pix & 0x3));
-    timeOfArrival = (unsigned short)((datapacket >> (16 + 14)) & 0x3fff);   
-    timeOverThreshold = (unsigned short)((datapacket >> (16 + 4)) & 0x3ff);	
-    fineTimeOfArrival = (unsigned char)((datapacket >> 16) & 0xf);
+    timeOfArrival = (unsigned short)((dataPacket >> (16 + 14)) & 0x3fff);   
+    timeOverThreshold = (unsigned short)((dataPacket >> (16 + 4)) & 0x3ff);	
+    fineTimeOfArrival = (unsigned char)((dataPacket >> 16) & 0xf);
     coarseTimeOfArrival = (timeOfArrival << 4) | (~fineTimeOfArrival & 0xf);
     spidrTimens = spidrTime * 25.0 * 16384.0;
     //timeOfArrivalNS = timeOfArrival * 25.0;
@@ -300,29 +299,29 @@ void processPixelPacket(unsigned long long datapacket, signalData &signalData) {
  * @brief Takes a Global Time Stamp data packet from a tpx3 file, processes it, 
  * and updates the corresponding signal data structure. 
  *
- * This function takes the data packet pass through unsigned long long datapacket and processes the timing of 
- * the Global Time Stamp hit. It then update the corresponding signalData structure, which is passed by refference. 
+ * This function takes the data packet pass through unsigned long long dataPacket and processes the timing of 
+ * the Global Time Stamp hit. It then update the corresponding signalData structure, which is passed by reference. 
  * 
  * TODO: I need to rewrite this for clarity. Also need to figure out logic for time stamps.  
  * 
- * @param datapacket     64 btye data packet that contains raw timing info
+ * @param dataPacket    64 byte data packet that contains raw timing info
  * @param signalData    HERMES defined structure that contain raw data info from data packets.
  * @return nothing
  */ 
-void processGlobalTimePacket(uint64_t datapacket, signalData &signalData) {
+void processGlobalTimePacket(uint64_t dataPacket, signalData &signalData) {
     // Logic for Global time packet
-    uint8_t timeType = static_cast<uint8_t>((datapacket >> 56) & 0xFF);                        
+    uint8_t timeType = static_cast<uint8_t>((dataPacket >> 56) & 0xFF);                        
 
     // Time Low packet
     if (timeType == 0x44) {
-        timeStampLow_25nsClock = static_cast<uint32_t>((datapacket >> 16) & 0xFFFFFFFF);    // Extract 32-bit timestamp
-        spidrTime = static_cast<uint16_t>(datapacket & 0xFFFF);                             // Extract 16-bit SPIDR time
+        timeStampLow_25nsClock = static_cast<uint32_t>((dataPacket >> 16) & 0xFFFFFFFF);    // Extract 32-bit timestamp
+        spidrTime = static_cast<uint16_t>(dataPacket & 0xFFFF);                             // Extract 16-bit SPIDR time
         global_timestamp = timeStampLow_25nsClock*25E-9;
 
     // Time High packet
     } else if (timeType == 0x45) { 
-        timeStampHigh_107sClock = static_cast<uint16_t>((datapacket >> 16) & 0xFFFF);       // Extract 16-bit timestamp
-        spidrTime = static_cast<uint16_t>(datapacket & 0xFFFF);                             // Extract 16-bit SPIDR time
+        timeStampHigh_107sClock = static_cast<uint16_t>((dataPacket >> 16) & 0xFFFF);       // Extract 16-bit timestamp
+        spidrTime = static_cast<uint16_t>(dataPacket & 0xFFFF);                             // Extract 16-bit SPIDR time
         global_timestamp = timeStampHigh_107sClock*107.374182;
     }
 
@@ -350,7 +349,7 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
     size_t currentPacket = 0; 
 
     
-    // Continue to loop through datapacket array until you hit the numberOfDataPackets 
+    // Continue to loop through dataPacket array until you hit the numberOfDataPackets 
     while (currentPacket < configParams.maxPacketsToRead) {
         // Grab last 32 bits of current packet
         uint32_t tpx3flag = static_cast<uint32_t>(dataPackets[currentPacket]);
@@ -491,6 +490,12 @@ tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams){
 
     // Ensure maxPacketsToRead does not exceed the total number of available packets
     size_t packetsToRead = std::min(static_cast<size_t>(configParams.maxPacketsToRead), static_cast<size_t>(tpx3FileInfo.numberOfDataPackets));
+    
+    // If maxPacketsToRead is set to zero then read entire tpx3File and set maxPacketsToRead to numberOfDataPackets
+    if(configParams.maxPacketsToRead == 0){
+        packetsToRead = tpx3FileInfo.numberOfDataPackets;
+        configParams.maxPacketsToRead = tpx3FileInfo.numberOfDataPackets;
+    }
 
     // Allocate an array for tpx3DataPackets to store signals up to the maxPacketsToRead from the TPX3 file
     uint64_t* tpx3DataPackets = new uint64_t[packetsToRead];
@@ -504,8 +509,6 @@ tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams){
     if(configParams.verboseLevel>=2){std::cout << "Closing tpx3 file" << configParams.runHandle << std::endl;}
     tpx3File.close();
 
-    
-    
     // allocate an array of signalData called signalDataArray that is the same size as bufferSize//8
     signalData* signalDataArray = new signalData[packetsToRead];
     

@@ -458,10 +458,10 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
  * @brief Takes a Global Time Stamp data packet from a tpx3 file, processes it, 
  * and updates the corresponding signal data structure. 
  *
- * This function takes the data packet pass through unsigned long long datapacket and processes the timing of 
- * the Global Time Stamp hit. It then update the corresponding signalData structure, which is passed by refference.  
+ * This function takes the data packet pass through unsigned long long dataPacket and processes the timing of 
+ * the Global Time Stamp hit. It then update the corresponding signalData structure, which is passed by reference.  
  * 
- * @param datapacket     64 btye data packet that contains raw timing info
+ * @param dataPacket    64 byte data packet that contains raw timing info
  * @param signalData    HERMES defined structure that contain raw data info from data packets.
  * @return nothing
  */ 
@@ -519,9 +519,9 @@ tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams){
     if (configParams.clusterPixels){clusterSignals(configParams, signalDataArray, tpx3FileInfo);}
     
 
-    delete[] tpx3DataPackets;    // Don't forget to free the allocated memory
-    delete[] signalDataArray;       // Assuming you're done with signalDataArray
-    return tpx3FileInfo;            // Return the tpx3file info. 
+    delete[] tpx3DataPackets;   // Don't forget to free the allocated memory
+    delete[] signalDataArray;   // Assuming you're done with signalDataArray
+    return tpx3FileInfo;        // Return the tpx3file info. 
 }
 
 

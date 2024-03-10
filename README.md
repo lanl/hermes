@@ -38,7 +38,7 @@ pyHERMES requires Python 3.8 or later. Python can be obtained directly via downl
 cHERMES requires a C/C++ Compiler, along with CMake 3.15 or higher.
 ##### Linux/macOS #####
 
-2. **GCC/G++ (Linux) or Xcode Command Line Tools (macOS):**
+1. **GCC/G++ (Linux) or Xcode Command Line Tools (macOS):**
    - Linux:
      ```sh
      sudo apt-get install build-essential
@@ -49,7 +49,7 @@ cHERMES requires a C/C++ Compiler, along with CMake 3.15 or higher.
        xcode-select --install
        ```
 
-3. **CMake:**
+2. **CMake:**
    - Install CMake using your package manager or from [https://cmake.org/download/](https://cmake.org/download/).
      ```sh
      # Ubuntu/Debian
@@ -60,10 +60,10 @@ cHERMES requires a C/C++ Compiler, along with CMake 3.15 or higher.
      brew install cmake
      ```
 #### Windows ####
-2. **Microsoft C++ Build Tools:**
+1. **Microsoft C++ Build Tools:**
    - Download and install the Build Tools for Visual Studio from [https://visualstudio.microsoft.com/visual-cpp-build-tools/](https://visualstudio.microsoft.com/visual-cpp-build-tools/). During installation, select the "C++ build tools" workload.
 
-3. **CMake:**
+2. **CMake:**
    - Download and install CMake from [https://cmake.org/download/](https://cmake.org/download/). During installation, ensure you add CMake to the system PATH.
 
 

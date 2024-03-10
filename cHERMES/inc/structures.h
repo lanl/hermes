@@ -29,21 +29,24 @@ struct configParameters {
     uint32_t maxPacketsToRead = 0;  // Number of buffer to read in. 0 means read all buffers. 
     bool fillHistograms = false;     // Flag to fill histograms
     int verboseLevel = 1;           // Verbosity Level
+                                    // 0 = be quite, print nothing!
                                     // 1 = General file input/output
                                     // 2 = Config and event diagnostics
                                     // 3 = Buffer diagnostics
+                                    // 4 = packet diagnostics
 };
 
-// This structure is used to contain various dianostic info used during the unpacking processes (in dataPacketProcessor class)
+// This structure is used to contain various diagnostic info used during the unpacking processes (in dataPacketProcessor class)
 struct tpx3FileDiagnostics {
-    uintmax_t filesize = 0;             // size in bytes of tpx3 file
-    uint64_t numberOfDataPackets = 0;    // number of data packets
-    uint32_t numberOfBuffers = 0;        // number of buffers 
-    uint32_t numberOfPixelHits = 0;      // number of pixel hits
-    uint32_t numberOfTDC1s = 0;          // number of TDC1 triggers
-    uint32_t numberOfTDC2s = 0;          // number of TDC2 triggers
-    uint32_t numberOfGTS = 0;            // number of global time stamps.
-    uint32_t numberOfTXP3Controls = 0;   // number of TPX3 Control packets.
+    size_t filesize = 0;                 // size in bytes of tpx3 file
+    size_t numberOfDataPackets = 0;       // number of data packets
+    size_t numberOfProcessedPackets = 0;  // number of processed data packets
+    size_t numberOfBuffers = 0;           // number of buffers 
+    size_t numberOfPixelHits = 0;         // number of pixel hits
+    size_t numberOfTDC1s = 0;             // number of TDC1 triggers
+    size_t numberOfTDC2s = 0;             // number of TDC2 triggers
+    size_t numberOfGTS = 0;               // number of global time stamps.
+    size_t numberOfTXP3Controls = 0;      // number of TPX3 Control packets.
 
     double totalHermesTime = 0;
     double totalUnpackingTime = 0;

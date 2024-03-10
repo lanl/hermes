@@ -23,13 +23,16 @@ void writeRawSignals(const configParameters& configParams, std::ofstream& rawSig
 void clusterSignals(const configParameters& configParams, signalData* signalDataArray, tpx3FileDiagnostics& tpx3FileInfo);
 
 // Processes a TDC packet and updates the provided signalData structure.
-void processTDCPacket(unsigned long long datapacket, signalData &signalData);
+void processTDCPacket(unsigned long long dataPacket, signalData &signalData);
 
 // Processes a Pixel packet and updates the provided signalData structure.
-void processPixelPacket(unsigned long long datapacket, signalData &signalData);
+void processPixelPacket(unsigned long long dataPacket, signalData &signalData);
 
 // Processes a Global Time packet and updates the provided signalData structure.
-void processGlobalTimePacket(unsigned long long datapacket, signalData &signalData);
+void processGlobalTimePacket(unsigned long long dataPacket, signalData &signalData);
+
+void processSPIDRControlPacket(unsigned long long dataPacket, signalData &signalData);
+void processTPX3ControlPacket(unsigned long long dataPacket, signalData &signalData);
 
 // Unpack and process entire TPX3File
 tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams);

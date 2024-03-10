@@ -81,6 +81,7 @@ void sortSignals(const configParameters& configParams, signalData* signalDataArr
     auto stopSortTime = std::chrono::high_resolution_clock::now();
     bufferSortTime = stopSortTime - startSortTime;
     tpx3FileInfo.totalSortingTime = bufferSortTime.count();
+    if (configParams.verboseLevel>=3) {std::cout <<"Finished sorting all "<< tpx3FileInfo.numberOfDataPackets << " signal data. " << std::endl;}
 }
 
 
@@ -348,17 +349,19 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
     // Initialize the counter outside the while loop
     size_t currentPacket = 0; 
 
+    
     // Continue to loop through datapacket array until you hit the numberOfDataPackets 
     while (currentPacket < configParams.maxPacketsToRead) {
         // Grab last 32 bits of current packet
         uint32_t tpx3flag = static_cast<uint32_t>(dataPackets[currentPacket]);
-
+        
         // If tpx3flag matches the "TPX3" then you found a chuck header
         if (tpx3flag == tpx3Signature) {
 
             // Start processing the chuck header to get size and number of data packets in chuck. 
             uint16_t chunkSize = static_cast<uint16_t>((dataPackets[currentPacket] >> 48) & 0xFFFF);
             uint16_t numPacketsInChunk = chunkSize / 8;
+            if(configParams.verboseLevel >= 3){std::cout << "Found TPX3 chunk header with " << numPacketsInChunk << " packets."<<std::endl;}
 
             // Iterate through each data packet in the current chunk
             for (uint16_t chunkPacketIndex = 1; chunkPacketIndex <= numPacketsInChunk; ++chunkPacketIndex) {
@@ -378,19 +381,21 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
                         std::cout << "Integrated ToT mode packet detected." << std::endl;
                         break;
                     case 0xB: // Time of Arrival mode
+                        if(configParams.verboseLevel >= 4){std::cout << "Pixel data packet" << std::endl;}
                         processPixelPacket(dataPackets[actualPacketIndex], signalDataArray[actualPacketIndex]);
                         tpx3FileInfo.numberOfPixelHits++;
                         break;
                     case 0x6: // TDC data packets
+                        if(configParams.verboseLevel >= 4){std::cout << "TDC data packet" << std::endl;}
                         processTDCPacket(dataPackets[actualPacketIndex], signalDataArray[actualPacketIndex]);
                         tpx3FileInfo.numberOfTDC1s++;
                         break;
                     case 0x4: // Global time data packets
-                        {
-                            processGlobalTimePacket(dataPackets[actualPacketIndex], signalDataArray[actualPacketIndex]);
-                            tpx3FileInfo.numberOfGTS++;
-                            break;
-                        }
+                        if(configParams.verboseLevel >= 4){std::cout << "Global time stamp data packet" << std::endl;}
+                        processGlobalTimePacket(dataPackets[actualPacketIndex], signalDataArray[actualPacketIndex]);
+                        tpx3FileInfo.numberOfGTS++;
+                        break;
+                        
                     case 0x5: { // SPIDR control packets, note the added braces to introduce a new block scope
                         uint8_t subType = static_cast<uint8_t>((dataPackets[actualPacketIndex] >> 56) & 0xF);
                         switch (subType) {
@@ -445,6 +450,8 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
     auto stopUnpackTime = std::chrono::high_resolution_clock::now(); // Grab a STOP time for unpacking
     bufferUnpackTime = stopUnpackTime - startUnpackTime;
     tpx3FileInfo.totalUnpackingTime = tpx3FileInfo.totalUnpackingTime + bufferUnpackTime.count();
+    tpx3FileInfo.numberOfDataPackets = currentPacket;
+    if(configParams.verboseLevel >= 3){std::cout << "Finished unpacking all "<< currentPacket << " data packets" << std::endl;}
 }
 
 

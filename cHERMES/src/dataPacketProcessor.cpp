@@ -394,7 +394,6 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
     memcpy(&tpx3Signature, tpx3SignatureStr, sizeof(uint32_t));
 
     size_t currentPacket = 0;       // Initialize the counter outside the while loop
-    size_t processedPackets = 0;    // Track the number of processed packets
     
     // Continue to loop through dataPacket array until you hit the numberOfDataPackets 
     while (currentPacket < configParams.maxPacketsToRead) {
@@ -475,7 +474,8 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
                                 if(configParams.verboseLevel >= 4){std::cout << std::dec << currentPacket << ":" << chunkPacketIndex << ": Unknown SPIDR control packet subtype detected." << std::endl;}
                                 break;
                         }
-                        //processSPIDRControlPacket(dataPackets[currentPacket], signalDataArray[currentPacket]);
+                        processSPIDRControlPacket(dataPackets[currentPacket], signalDataArray[currentPacket]);
+                        tpx3FileInfo.numberOfProcessedPackets++; // Update number of packets processed
                         break;
                     }
                     case 0x7: { // TPX3 control packets, again note the added braces
@@ -498,7 +498,8 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
                             }
                         }
                         tpx3FileInfo.numberOfTXP3Controls++;
-                        //processTPX3ControlPacket(dataPackets[currentPacket], signalDataArray[currentPacket]);
+                        processTPX3ControlPacket(dataPackets[currentPacket], signalDataArray[currentPacket]);
+                        tpx3FileInfo.numberOfProcessedPackets++; // Update number of packets processed
                         break;
                     }
                 }
@@ -506,7 +507,7 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
                 currentPacket++;
 
                 // Break out of the loop if processedPackets reaches maxPacketsToRead
-                if (processedPackets >= configParams.maxPacketsToRead) {break;}
+                if (tpx3FileInfo.numberOfProcessedPackets >= configParams.maxPacketsToRead) {break;}
             }
             
             // Update number of buffers processed. instead
@@ -522,7 +523,7 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
     bufferUnpackTime = stopUnpackTime - startUnpackTime;
     tpx3FileInfo.totalUnpackingTime = tpx3FileInfo.totalUnpackingTime + bufferUnpackTime.count();
     tpx3FileInfo.numberOfDataPackets = currentPacket;
-    if(configParams.verboseLevel >= 3){std::cout << "Unpacked "<< currentPacket << " data packets, processed "<< processedPackets << " data packets" << std::endl;}
+    if(configParams.verboseLevel >= 3){std::cout << "Unpacked "<< currentPacket << " data packets, processed "<< tpx3FileInfo.numberOfProcessedPackets << " data packets" << std::endl;}
 }
 
 

@@ -29,9 +29,11 @@ struct configParameters {
     uint32_t maxPacketsToRead = 0;  // Number of buffer to read in. 0 means read all buffers. 
     bool fillHistograms = false;     // Flag to fill histograms
     int verboseLevel = 1;           // Verbosity Level
+                                    // 0 = be quite, print nothing!
                                     // 1 = General file input/output
                                     // 2 = Config and event diagnostics
                                     // 3 = Buffer diagnostics
+                                    // 4 = packet diagnostics
 };
 
 // This structure is used to contain various diagnostic info used during the unpacking processes (in dataPacketProcessor class)

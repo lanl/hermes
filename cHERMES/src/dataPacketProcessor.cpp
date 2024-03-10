@@ -225,6 +225,7 @@ void writeRawSignals(const configParameters& configParams, std::ofstream& rawSig
     auto stopWriteTime = std::chrono::high_resolution_clock::now();
     bufferWriteTime = stopWriteTime - startWriteTime;
     tpx3FileInfo.totalWritingTime = bufferWriteTime.count();
+    if (configParams.verboseLevel >= 3) {std::cout << "Finished writing out raw signal data." << std::endl;}
 }
 
 

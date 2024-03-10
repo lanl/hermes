@@ -1,16 +1,18 @@
 import argparse
-import pyhermes.plotter as ph_plotter   # pyhermes plotter class.
+import pyHERMES.plotter as ph_plotter   # pyhermes plotter class.
 import matplotlib.pyplot as plt
 
 # Parse command line arguments
 parser = argparse.ArgumentParser(description='Plot pixels in buffer from a file.')
+parser.add_argument('file_path', type=str, help='Path to the data file')
 parser.add_argument('buffer_number', type=int, help='Specify the buffer number you\'re interested in')
 args = parser.parse_args()
 
-file_path = '../pixelID.example'       # Define the path to your file
-buffer_number = args.buffer_number  # Use the buffer number passed from command line
+# Use the file path and buffer number passed from command line
+file_path = args.file_path
+buffer_number = args.buffer_number
 
-# Initiate a pyhermes plotter class
+# Initiate a pyHERMES plotter class
 plotter = ph_plotter.PlotPixelsInSingeBuffer_3D(file_path, buffer_number)
 
 # For plotting single plots

@@ -1,5 +1,5 @@
 import argparse
-import pyhermes.plotter as ph_plotter
+import pyHERMES.plotter as ph_plotter
 
 # Parse command line arguments
 parser = argparse.ArgumentParser(description='Creates images from pixels in a given buffer.')
@@ -17,6 +17,6 @@ start = args.movie_start_in_seconds
 stop = args.movie_stop_in_seconds
 time_bins = args.time_bin_in_seconds
 
-# Initiate a pyhermes plotter class
+# Initiate a pyHERMES plotter class
 plotter = ph_plotter.PlotPixelsInSingeBuffer_3D(file_path, buffer_number)
 plotter.generate_ToA_Image_Sequence(toa_start=start, toa_stop=stop, time_bin_size=time_bins)

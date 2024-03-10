@@ -350,7 +350,7 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
 
     // Continue to loop through datapacket array until you hit the numberOfDataPackets 
     while (currentPacket < configParams.maxPacketsToRead) {
-        // Grab last 32 bits of current packt
+        // Grab last 32 bits of current packet
         uint32_t tpx3flag = static_cast<uint32_t>(dataPackets[currentPacket]);
 
         // If tpx3flag matches the "TPX3" then you found a chuck header
@@ -413,19 +413,19 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
                         uint8_t controlType = static_cast<uint8_t>((dataPackets[actualPacketIndex] >> 48) & 0xFF);
                         if (controlType ==0xA0) {
                             if(configParams.verboseLevel >= 4){
-                                std::cout << "End of sequential readout detected with "<< std::hex << "packetType: 0x" << +packetType << "\t"<< "countrolType: 0x" << +controlType << std::endl;
+                                std::cout << "End of sequential readout detected with "<< std::hex << "packetType: 0x" << +packetType << "\t"<< "controlType: 0x" << +controlType << std::endl;
                             }
 
                         } else if (controlType == 0xB0) {
                             if(configParams.verboseLevel >= 4){
-                                std::cout << "End of data driven readout detected with "<< std::hex << "packetType: 0x" << +packetType << "\t"<< "countrolType: 0x" << +controlType << std::endl;
+                                std::cout << "End of data driven readout detected with "<< std::hex << "packetType: 0x" << +packetType << "\t"<< "controlType: 0x" << +controlType << std::endl;
                             }
                         } else {
                             if(configParams.verboseLevel >= 4){
                             // Print out the hex value of controlType
                                 std::cout << "Unkown TPX3 control packets detected with "
                                 << "packetType: 0x"<< std::hex << +packetType << "\t"
-                                << "countrolType: 0x" << controlType << std::endl;
+                                << "controlType: 0x" << controlType << std::endl;
                             }
                         }
                         tpx3FileInfo.numberOfTXP3Controls++;
@@ -461,9 +461,9 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
  */ 
 tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams){
     
-    std::ifstream tpx3File;             // initiate a input filestream for reading in TPX3file
-    std::ofstream rawSignalsFile;       // initiate a output filestream for writing raw data
-    tpx3FileDiagnostics tpx3FileInfo;    // initiate container for diagnositcs while unpacking.
+    std::ifstream tpx3File;             // initiate a input file-stream for reading in TPX3file
+    std::ofstream rawSignalsFile;       // initiate a output file-stream for writing raw data
+    tpx3FileDiagnostics tpx3FileInfo;    // initiate container for diagnostics while unpacking.
 
     // TODO: Combine these two once better error handling is implemented. 
     // Open the TPX3File
@@ -478,7 +478,7 @@ tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams){
         try {rawSignalsFile = openRawSignalsOutputFile(configParams);} 
         catch (const std::runtime_error& e) {
             std::cerr << "Error: " << e.what() << std::endl;
-            return {}; // Handle the erroras needed, possibly returning an error code or an empty object
+            return {}; // Handle the errors needed, possibly returning an error code or an empty object
         }
     }
 
@@ -492,16 +492,19 @@ tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams){
     size_t bytesToRead = packetsToRead * sizeof(uint64_t);
     
     // Read the calculated number of bytes from the TPX3 file
+    if(configParams.verboseLevel>=2){std::cout << "Reading tpx file "<<  configParams.runHandle << " into memory" << std::endl;}
     tpx3File.read((char*)tpx3DataPackets, bytesToRead);
+    if(configParams.verboseLevel>=2){std::cout << "Closing tpx3 file" << configParams.runHandle << std::endl;}
     tpx3File.close();
 
+    
     
     // allocate an array of signalData called signalDataArray that is the same size as bufferSize//8
     signalData* signalDataArray = new signalData[packetsToRead];
     
     processDataPackets(configParams, tpx3FileInfo,  tpx3DataPackets, signalDataArray);
 
-    if (configParams.sortSignals){sortSignals(configParams, signalDataArray, tpx3FileInfo);}        // If sortSingnals is true then sort!! 
+    if (configParams.sortSignals){sortSignals(configParams, signalDataArray, tpx3FileInfo);}        // If sortSignals is true then sort!! 
     if (configParams.writeRawSignals){writeRawSignals(configParams, rawSignalsFile, signalDataArray, tpx3FileInfo);}    // If writeRawSignals is true then write out binary
     if (configParams.clusterPixels){clusterSignals(configParams, signalDataArray, tpx3FileInfo);}
     

@@ -239,7 +239,7 @@ void writeRawSignals(const configParameters& configParams, std::ofstream& rawSig
  * @param signalData    HERMES defined structure that contain raw data info from data packets.
  * @return nothing
  */
-void processTDCPacket(unsigned long long dataPacket, signalData &signalData) {
+void processTDCPacket(uint16_t bufferNumber, unsigned long long dataPacket, signalData &signalData) {
     // Logic for TDC packet
 
 	// Unpack dataPacket
@@ -249,6 +249,7 @@ void processTDCPacket(unsigned long long dataPacket, signalData &signalData) {
 	trigTimeFine = (dataPacket & 0x0000000000000E00) | (tmpFine & 0x00000000000001FF);
 
 	// Set info in signalData 
+    signalData.bufferNumber = bufferNumber;
     signalData.signalType = 1;
 	signalData.xPixel = 0;
 	signalData.yPixel = 0;
@@ -269,7 +270,7 @@ void processTDCPacket(unsigned long long dataPacket, signalData &signalData) {
  * @param signalData    HERMES defined structure that contain raw data info from data packets.
  * @return nothing
  */ 
-void processPixelPacket(unsigned long long dataPacket, signalData &signalData) {
+void processPixelPacket(uint16_t bufferNumber, unsigned long long dataPacket, signalData &signalData) {
     // Unpack dataPacket
     spidrTime = (unsigned short)(dataPacket & 0xffff);
     dCol = (dataPacket & 0x0FE0000000000000L) >> 52;                                                                  
@@ -287,6 +288,7 @@ void processPixelPacket(unsigned long long dataPacket, signalData &signalData) {
     global_timestamp = spidrTimeInNs + coarseTimeOfArrival * (25.0 / 16);
     
     // Set info in signalData 
+    signalData.bufferNumber = bufferNumber;
     signalData.signalType = 2;
 	signalData.xPixel = x;
 	signalData.yPixel = y;
@@ -308,7 +310,7 @@ void processPixelPacket(unsigned long long dataPacket, signalData &signalData) {
  * @param signalData    HERMES defined structure that contain raw data info from data packets.
  * @return nothing
  */ 
-void processGlobalTimePacket(uint64_t dataPacket, signalData &signalData) {
+void processGlobalTimePacket(uint16_t bufferNumber, uint64_t dataPacket, signalData &signalData) {
     // Logic for Global time packet
     uint8_t timeType = static_cast<uint8_t>((dataPacket >> 56) & 0xFF);                        
 
@@ -326,6 +328,7 @@ void processGlobalTimePacket(uint64_t dataPacket, signalData &signalData) {
     }
 
     // Set info in signalData 
+    signalData.bufferNumber = bufferNumber;
     signalData.signalType = 3;
     signalData.xPixel = 0;
     signalData.yPixel = 0;
@@ -347,9 +350,10 @@ void processGlobalTimePacket(uint64_t dataPacket, signalData &signalData) {
  * @param signalData    HERMES defined structure that contain raw data info from data packets.
  * @return nothing
  */ 
-void processSPIDRControlPacket(uint64_t dataPacket, signalData &signalData) {
+void processSPIDRControlPacket(uint16_t bufferNumber, uint64_t dataPacket, signalData &signalData) {
 
     // Set info in signalData 
+    signalData.bufferNumber = bufferNumber;
     signalData.signalType = 4;
     signalData.xPixel = 0;
     signalData.yPixel = 0;
@@ -371,9 +375,10 @@ void processSPIDRControlPacket(uint64_t dataPacket, signalData &signalData) {
  * @param signalData    HERMES defined structure that contain raw data info from data packets.
  * @return nothing
  */ 
-void processTPX3ControlPacket(uint64_t dataPacket, signalData &signalData) {
+void processTPX3ControlPacket(uint16_t bufferNumber, uint64_t dataPacket, signalData &signalData) {
 
     // Set info in signalData 
+    signalData.bufferNumber = bufferNumber;
     signalData.signalType = 5;
     signalData.xPixel = 0;
     signalData.yPixel = 0;
@@ -387,6 +392,7 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
     
     // Grab a START time for unpacking
     auto startUnpackTime = std::chrono::high_resolution_clock::now(); 
+    if(configParams.verboseLevel >=2){std::cout << "Unpacking " << configParams.maxPacketsToRead << " raw signals from " << configParams.rawTPX3File << std::endl;}
 
     // Convert "TPX3" string to uint32_t in little endian format
     const char tpx3SignatureStr[] = "TPX3";
@@ -394,6 +400,7 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
     memcpy(&tpx3Signature, tpx3SignatureStr, sizeof(uint32_t));
 
     size_t currentPacket = 0;       // Initialize the counter outside the while loop
+    tpx3FileInfo.numberOfBuffers = 1;
     
     // Continue to loop through dataPacket array until you hit the numberOfDataPackets 
     while (currentPacket < configParams.maxPacketsToRead) {
@@ -440,20 +447,26 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
                         std::cout << "Integrated ToT mode packet detected." << std::endl;
                         break;
                     case 0xB: // Time of Arrival mode
+                        processPixelPacket(tpx3FileInfo.numberOfBuffers, dataPackets[currentPacket], signalDataArray[currentPacket]);
+
                         if(configParams.verboseLevel >= 4){std::cout << std::dec << currentPacket << ":" <<chunkPacketIndex << ": Pixel data packet" << std::endl;}
-                        processPixelPacket(dataPackets[currentPacket], signalDataArray[currentPacket]);
+                        
                         tpx3FileInfo.numberOfProcessedPackets++; // Update number of packets processed
                         tpx3FileInfo.numberOfPixelHits++;
                         break;
                     case 0x6: // TDC data packets
+                        processTDCPacket(tpx3FileInfo.numberOfBuffers, dataPackets[currentPacket], signalDataArray[currentPacket]);
+
                         if(configParams.verboseLevel >= 4){std::cout << std::dec << currentPacket << ":" << chunkPacketIndex << ": TDC data packet" << std::endl;}
-                        processTDCPacket(dataPackets[currentPacket], signalDataArray[currentPacket]);
+                        
                         tpx3FileInfo.numberOfProcessedPackets++; // Update number of packets processed
                         tpx3FileInfo.numberOfTDC1s++;
                         break;
                     case 0x4: // Global time data packets
+                        processGlobalTimePacket(tpx3FileInfo.numberOfBuffers, dataPackets[currentPacket], signalDataArray[currentPacket]);
+
                         if(configParams.verboseLevel >= 4){std::cout << std::dec << currentPacket << ":" << chunkPacketIndex << ": Global time stamp data packet" << std::endl;}
-                        processGlobalTimePacket(dataPackets[currentPacket], signalDataArray[currentPacket]);
+                        
                         tpx3FileInfo.numberOfProcessedPackets++; // Update number of packets processed
                         tpx3FileInfo.numberOfGTS++;
                         break;
@@ -474,7 +487,8 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
                                 if(configParams.verboseLevel >= 4){std::cout << std::dec << currentPacket << ":" << chunkPacketIndex << ": Unknown SPIDR control packet subtype detected." << std::endl;}
                                 break;
                         }
-                        processSPIDRControlPacket(dataPackets[currentPacket], signalDataArray[currentPacket]);
+
+                        processSPIDRControlPacket(tpx3FileInfo.numberOfBuffers, dataPackets[currentPacket], signalDataArray[currentPacket]);
                         tpx3FileInfo.numberOfProcessedPackets++; // Update number of packets processed
                         break;
                     }
@@ -497,9 +511,10 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
                                 << "controlType: 0x" << controlType << std::endl;
                             }
                         }
-                        tpx3FileInfo.numberOfTXP3Controls++;
-                        processTPX3ControlPacket(dataPackets[currentPacket], signalDataArray[currentPacket]);
+                        
+                        processTPX3ControlPacket(tpx3FileInfo.numberOfBuffers, dataPackets[currentPacket], signalDataArray[currentPacket]);
                         tpx3FileInfo.numberOfProcessedPackets++; // Update number of packets processed
+                        tpx3FileInfo.numberOfTXP3Controls++;
                         break;
                     }
                 }
@@ -511,7 +526,9 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
             }
             
             // Update number of buffers processed. instead
+            if (tpx3FileInfo.numberOfBuffers == 0){std::cout << "Buffer Number 0" << std::endl;}
             tpx3FileInfo.numberOfBuffers++;
+            
         } else {
             std::cout << "ERROR: Could not find TPX3 Flag, instead found " << std::hex << +tpx3flag << endl;
             currentPacket++;
@@ -523,7 +540,7 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
     bufferUnpackTime = stopUnpackTime - startUnpackTime;
     tpx3FileInfo.totalUnpackingTime = tpx3FileInfo.totalUnpackingTime + bufferUnpackTime.count();
     tpx3FileInfo.numberOfDataPackets = currentPacket;
-    if(configParams.verboseLevel >= 3){std::cout << "Unpacked "<< currentPacket << " data packets, processed "<< tpx3FileInfo.numberOfProcessedPackets << " data packets" << std::endl;}
+    if(configParams.verboseLevel >= 2){std::cout << "Unpacked "<< currentPacket << " data packets, processed "<< tpx3FileInfo.numberOfProcessedPackets << " data packets" << std::endl;}
 }
 
 

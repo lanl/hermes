@@ -74,24 +74,53 @@ class PlotDiagnostics:
         """
         self.df = DataLoader(filepath).load_data()
 
-    def plot_packets_per_buffer_histogram(self):
+    def print_signal_data(self):
         """
-        Plots a histogram of the number of data packets per buffer.
+        Prints the details of each signal in the dataset.
 
-        This method counts the occurrences of each buffer number in the dataset and plots these counts as a histogram,
+        This method iterates over each row in the DataFrame and prints out the signal's details,
+        including buffer number, signal type, pixel coordinates, time of arrival, time over threshold, and group ID.
+        """
+        # Ensure that df is a DataFrame and not None
+        if self.df is not None and not self.df.empty:
+            for index, row in self.df.iterrows():
+                print(f"Signal {index}: Buffer Number={row['buffer_number']}, "
+                      f"Signal Type={row['signal_type']}, X Pixel={row['x_pixel']}, "
+                      f"Y Pixel={row['y_pixel']}, ToA={row['toa']}, ToT={row['tot']}, "
+                      f"Group ID={row['group_ID']}")
+        else:
+            print("No data to display. DataFrame is empty or not loaded.")
+
+    def plot_packets_per_buffer_histogram(self, print_counts=False):
+        """
+        Plots a bar chart of the number of data packets per buffer.
+
+        This method counts the occurrences of each buffer number in the dataset and plots these counts as a bar chart,
         providing insights into the distribution and volume of data packets across buffers.
-        """
-        
-        # Count the occurrences of each buffer_number
-        buffer_counts = self.df['buffer_number'].value_counts()
 
-        plt.figure(figsize=(10, 6))
-        buffer_counts.hist(bins=range(min(buffer_counts.index), max(buffer_counts.index) + 1))
-        plt.title('Histogram of Data Packets per Buffer')
+        Parameters:
+            print_counts (bool): If True, prints the counts of data packets per buffer before plotting.
+        """
+
+        # Count the occurrences of each buffer_number
+        buffer_counts = self.df['buffer_number'].value_counts().sort_index()
+
+        if print_counts:
+            print("Buffer \t Counts")
+            # Iterate through buffer_counts Series and print each buffer number and its count
+            for buffer_number, count in buffer_counts.items():
+                print(f"{buffer_number}\t{count}")
+
+        plt.figure(figsize=(14, 8))
+        plt.bar(buffer_counts.index, buffer_counts.values, width=1.0, edgecolor=None)
+        plt.title('Data Packets per Buffer')
         plt.xlabel('Buffer Number')
         plt.ylabel('Count of Data Packets')
-        plt.grid(True)
+        plt.xticks(rotation=90)  # Rotate x labels if they overlap or for better readability
+        plt.grid(axis='y')  # Add horizontal grid lines for readability
+        plt.tight_layout()  # Adjust layout to make room for the rotated x-axis labels
         plt.show()
+
 
 
 class PlotPixelsInSingeBuffer_3D:

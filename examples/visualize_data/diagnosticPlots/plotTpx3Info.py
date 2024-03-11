@@ -11,4 +11,5 @@ file_path = args.file_path
 
 # Initiate the PlotDiagnostics class with the specified file path
 diagnostics = ph_plotter.PlotDiagnostics(file_path)
+#diagnostics.print_signal_data()
 diagnostics.plot_packets_per_buffer_histogram()

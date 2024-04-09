@@ -17,7 +17,7 @@ from multiprocessing import Value, Lock
 from pyhermes import empir
 
 #-------------------------------------------------------------------------------------
-def main(dest, max_concurrent_jobs=50):
+def main(dest, max_concurrent_jobs=5):
     global global_pool
 
     config_empir = empirConfig(dest)

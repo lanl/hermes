@@ -20,24 +20,34 @@ class empirConfig:
             {dest}/listFiles/   <- Photon "list" files are stored here
             {dest}/eventFiles/  <- Neutron "event" files are stored here
             {dest}/final/       <- Final tiff stack images are stored here.
+            
+        Additionally, there are empir_export binaries that can be used to extract pixel,
+        photon, and event information from the tpx3 files. These can be stored in a
+        separate export directory
+            {dest}/export/      <- Exported pixel, photon, and event information is stored here.
     """
     def __init__(self, dest):
         # file structure
-        self.log_file_dir = f"../data/{dest}/logFiles/"         # locating of logFiles
-        self.tpx3_file_dir = f"../data/{dest}/tpx3Files/"       # locating of tpx3Files
-        self.list_file_dir = f"../data/{dest}/listFiles/"       # locating of listFiles
-        self.event_file_dir = f"../data/{dest}/eventFiles/"     # locating of eventFiles
-        self.final_file_dir = f"../data/{dest}/final/"          # locating of final image files
+        self.destination_dir = f"{dest}"                # locating of run directory
+        self.log_file_dir = f"{dest}/logFiles/"         # locating of logFiles
+        self.tpx3_file_dir = f"{dest}/tpx3Files/"       # locating of tpx3Files
+        self.list_file_dir = f"{dest}/listFiles/"       # locating of listFiles
+        self.event_file_dir = f"{dest}/eventFiles/"     # locating of eventFiles
+        self.final_file_dir = f"{dest}/final/"          # locating of final image files
+        self.export_file_dir = f"{dest}/exportFiles/"   # locating of exported info files
+        
         # --- pixel-to-photon parameters
         self.pixel_d_space = 10                     # Distance in space for pixel search [px] (default: 10)
         self.pixel_d_time = 1E-6                    # Distance in time for pixel search [s] (default: 1e-06)
         self.pixel_min_number = 2                   # Minimum number of pixels in a photon event (default: 2)
         self.use_tdc1 = False                       # Use TDC1 as trigger input (TDC1 is ignored by default)
+        
         # --- photon-to-event parameters
         self.photon_d_space = None                  # Distance in space for photon search [px]
         self.photon_d_time = None                   # Distance in time for photon search [s]
         self.photon_max_duration = None             # Maximum duration to look for photons [s] (default: inf)
         self.photon_d_time_extF = None              # Extents duration by multiple of time difference to last photon (default: 0)
+        
         # --- event-to-image parameters
         self.size_x = 512                           # Number of pixels in x direction for the final image (default: 512 px)
         self.size_y = 512                           # Number of pixels in y direction for the final image (defaults to match size in x dimension)                                                      
@@ -104,6 +114,19 @@ class empirConfig:
         self.psd_min = psd_min
         self.psd_max = psd_max
 
+    def check_or_create_sub_dirs(self,verbose_level=0):
+        """
+        Check if the subdirectories exist, and create them if they don't.
+        """
+        for dir_name in [self.log_file_dir, self.tpx3_file_dir, self.list_file_dir, self.event_file_dir, self.final_file_dir, self.export_file_dir]:
+            if(verbose_level>=1):
+                print("Checking directory: ", dir_name) 
+            if not os.path.exists(dir_name):
+                print(f"Could not find {dir_name}... now creating {dir_name}")
+                os.makedirs(dir_name)
+            else:
+                if(verbose_level>=1):
+                    print(f"Found {dir_name}")
 
 
 #-------------------------------------------------------------------------------------
@@ -168,8 +191,7 @@ def process_pixels_to_photons(input_dir="", tpx3_zip_file_name="", dspace=10, dt
 #-------------------------------------------------------------------------------------
 def process_photons_to_events(input_dir="", list_file_name="", output_dir="./", dspace=3, dtime=100e-6, durationMax=500e-6, log_dir="./"):
     """
-    self.list_file_dir, list_file, self.event_file_dir, self.dspace, self.dtime, self.durationMax, self.log_file_dir
-    Runs empir_photon2event with the user-defined parameters.
+    Runs empir_photon2event with the user-defined parameters. Input and output files are specified by the user.
     Here are the options of empir_photon2event:
         -i, --inputFile     Path to the input file, must not contain commas
         -o. --outputFile    Path to the output file, must not contain commas.
@@ -211,10 +233,88 @@ def process_photons_to_events(input_dir="", list_file_name="", output_dir="./", 
         subprocess.run(photons_to_events_command, stdout=log_output, stderr=subprocess.STDOUT)
 
 
+def export_pixel_activations(input_dir="",input_file="",output_dir="",output_file="",log_dir="./"):
+    """
+
+    Args:
+        input_dir (str, optional): _description_. Defaults to "".
+        input_file (str, optional): _description_. Defaults to "".
+        output_dir (str, optional): _description_. Defaults to "".
+        output_file (str, optional): _description_. Defaults to "".
+
+    Returns:
+        _type_: _description_
+    """
+
+    # check if empir_export_pixelActivations is in your path
+    if shutil.which("empir_export_pixelActivations") is None:
+        raise FileNotFoundError("empir_export_pixelActivations not found in path. Please check if EMPIR binaries are installed.")
+    
+    # Prepare the subprocess command for running "empir_export_pixelActivations"
+    # Note there is no "-i" or "-o" flag for this command, so we need to pass the input and output file paths as arguments
+    
+    export_pixel_activations_command = [
+        "empir_export_pixelActivations",
+        os.path.join(input_dir, input_file),
+        os.path.join(output_dir, output_file)
+    ]
+    
+    export_pixel_activations_run_msg = f"Running command: {' '.join(export_pixel_activations_command)}"
+
+    print(f"EMPIR: Exporting pixel activations for {input_file}")
+    
+    with open(os.path.join(output_dir, output_file), 'w') as log_output:
+        log_output.write("<hermes> " + export_pixel_activations_run_msg + "\n")
+        subprocess.run(export_pixel_activations_command, stdout=log_output, stderr=subprocess.STDOUT)
+        
+    
 #-------------------------------------------------------------------------------------
 def process_existing_tpx3_files(config, process_pool, file_counter, lock):
+    """
+    Process existing TPX3 files in the specified directory.
+
+    Args:
+        config (object): An object containing configuration parameters.
+        process_pool (object): A process pool for parallel processing.
+        file_counter (object): A shared counter for tracking the number of processed files.
+        lock (object): A lock for synchronizing access to the file counter.
+    """
+    # Get a list of existing TPX3 files in the directory
     existing_tpx3_files = [f for f in os.listdir(config.tpx3_file_dir) if f.endswith(".tpx3.zip")]
+
+    # Process each TPX3 file in parallel
     for tpx3_file in existing_tpx3_files:
+        # Apply the process_pixels_to_photons function asynchronously
+        process_pool.apply_async(process_pixels_to_photons, args=(
+            config.tpx3_file_dir, 
+            tpx3_file, 
+            config.pixel_d_space, 
+            config.pixel_d_time, 
+            config.pixel_min_number, 
+            config.use_tdc1, 
+            config.list_file_dir, 
+            config.log_file_dir))
+
+        # Increment the file counter
+        with lock:
+            file_counter.value += 1
+
+
+def unpack_pixel_activations(config, process_pool, file_counter, lock):
+    """This function takes the configuration object, process pool, file counter, and lock as arguments. It reads TPX3 files from the specified directory in the configuration object and exports the pixel activations to corresponding pixel activation files in the log file directory.
+
+    Args:
+        config (object): The configuration object containing TPX3 file directory and log file directory.
+        process_pool (object): The process pool used for parallel processing.
+        file_counter (object): The shared counter for tracking the number of processed files.
+        lock (object): The lock used for synchronizing access to the file counter.
+    """
+    # Get a list of existing TPX3 files in the directory
+    existing_tpx3_files = [f for f in os.listdir(config.tpx3_file_dir) if f.endswith(".tpx3")]
+
+    # Process each TPX3 file in parallel
+    for tpx3_file in existing_tpx3_files:
+        # Apply the process_pixels_to_photons function asynchronously
         process_pool.apply_async(process_pixels_to_photons, args=(
             config.tpx3_file_dir, 
             tpx3_file, 

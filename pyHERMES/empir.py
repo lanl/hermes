@@ -232,23 +232,19 @@ def process_photons_to_events(input_dir="", list_file_name="", output_dir="./", 
         log_output.write("<hermes> " + photons_to_events_run_msg + "\n")
         subprocess.run(photons_to_events_command, stdout=log_output, stderr=subprocess.STDOUT)
 
-
+#-------------------------------------------------------------------------------------
+# Export pixel activations processes and controllers
+#-------------------------------------------------------------------------------------
 def export_pixel_activations(input_dir="",input_file="",output_dir="",output_file="",log_dir="./"):
     """
 
     Args:
-        input_dir (str, optional): _description_. Defaults to "".
-        input_file (str, optional): _description_. Defaults to "".
-        output_dir (str, optional): _description_. Defaults to "".
-        output_file (str, optional): _description_. Defaults to "".
-
-    Returns:
-        _type_: _description_
+        input_dir (str, optional): Input directory containing all tpx3 files. Defaults to "".
+        input_file (str, optional): A specific tpx3 file. Defaults to "".
+        output_dir (str, optional): Output directory for all exported files. Defaults to "".
+        output_file (str, optional): Specific output file name. Defaults to "".
+        log_dir (str, optional): Directory for all empir logs. Defaults to "./".
     """
-
-    # check if empir_export_pixelActivations is in your path
-    if shutil.which("empir_export_pixelActivations") is None:
-        raise FileNotFoundError("empir_export_pixelActivations not found in path. Please check if EMPIR binaries are installed.")
     
     # Prepare the subprocess command for running "empir_export_pixelActivations"
     # Note there is no "-i" or "-o" flag for this command, so we need to pass the input and output file paths as arguments
@@ -259,15 +255,52 @@ def export_pixel_activations(input_dir="",input_file="",output_dir="",output_fil
         os.path.join(output_dir, output_file)
     ]
     
+    log_file_name = input_file.split(".")[0] + ".export_pixel_activations"
     export_pixel_activations_run_msg = f"Running command: {' '.join(export_pixel_activations_command)}"
+    print(export_pixel_activations_run_msg)
 
     print(f"EMPIR: Exporting pixel activations for {input_file}")
     
-    with open(os.path.join(output_dir, output_file), 'w') as log_output:
+    with open(os.path.join(log_dir, log_file_name), 'w') as log_output:
         log_output.write("<hermes> " + export_pixel_activations_run_msg + "\n")
         subprocess.run(export_pixel_activations_command, stdout=log_output, stderr=subprocess.STDOUT)
-        
+
+#-------------------------------------------------------------------------------------
+def unpack_pixel_activations(config, process_pool, file_counter, lock):
+    """This function takes the configuration object, process pool, file counter, and lock as arguments. It reads TPX3 files from the specified directory in the configuration object and exports the pixel activations to corresponding pixel activation files in the log file directory.
+
+    Args:
+        config (object): The configuration object containing TPX3 file directory and log file directory.
+        process_pool (object): The process pool used for parallel processing.
+        file_counter (object): The shared counter for tracking the number of processed files.
+        lock (object): The lock used for synchronizing access to the file counter.
+    """
+    # check if empir_export_pixelActivations is in your path
+    if shutil.which("empir_export_pixelActivations") is None:
+        raise FileNotFoundError("empir_export_pixelActivations not found in path. Please check if EMPIR binaries are installed.")
     
+    # Get a list of existing TPX3 files in the directory
+    existing_tpx3_files = [f for f in os.listdir(config.tpx3_file_dir) if f.endswith(".tpx3")]
+
+    # Process each TPX3 file in parallel
+    for tpx3_file in existing_tpx3_files:
+        # Apply the process_pixels_to_photons function asynchronously
+        process_pool.apply_async(export_pixel_activations, args=(
+            config.tpx3_file_dir, 
+            tpx3_file, 
+            config.export_file_dir, 
+            tpx3_file.replace(".tpx3", ".pixelActivations"), 
+            config.log_file_dir)
+        )
+
+        # Increment the file counter
+        with lock:
+            file_counter.value += 1
+    
+    process_pool.close()
+    process_pool.join()
+    
+
 #-------------------------------------------------------------------------------------
 def process_existing_tpx3_files(config, process_pool, file_counter, lock):
     """
@@ -298,37 +331,6 @@ def process_existing_tpx3_files(config, process_pool, file_counter, lock):
         # Increment the file counter
         with lock:
             file_counter.value += 1
-
-
-def unpack_pixel_activations(config, process_pool, file_counter, lock):
-    """This function takes the configuration object, process pool, file counter, and lock as arguments. It reads TPX3 files from the specified directory in the configuration object and exports the pixel activations to corresponding pixel activation files in the log file directory.
-
-    Args:
-        config (object): The configuration object containing TPX3 file directory and log file directory.
-        process_pool (object): The process pool used for parallel processing.
-        file_counter (object): The shared counter for tracking the number of processed files.
-        lock (object): The lock used for synchronizing access to the file counter.
-    """
-    # Get a list of existing TPX3 files in the directory
-    existing_tpx3_files = [f for f in os.listdir(config.tpx3_file_dir) if f.endswith(".tpx3")]
-
-    # Process each TPX3 file in parallel
-    for tpx3_file in existing_tpx3_files:
-        # Apply the process_pixels_to_photons function asynchronously
-        process_pool.apply_async(process_pixels_to_photons, args=(
-            config.tpx3_file_dir, 
-            tpx3_file, 
-            config.pixel_d_space, 
-            config.pixel_d_time, 
-            config.pixel_min_number, 
-            config.use_tdc1, 
-            config.list_file_dir, 
-            config.log_file_dir))
-
-        # Increment the file counter
-        with lock:
-            file_counter.value += 1
-
 
 #-------------------------------------------------------------------------------------
 class Tpx3FilesHandler(FileSystemEventHandler):

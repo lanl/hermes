@@ -33,7 +33,7 @@ def main(dest, max_concurrent_jobs=5):
     # Thread for exporting tpx3 files
     if existing_tpx3_files:
         print(f"Found {len(existing_tpx3_files)} .tpx3 files in {config_empir.tpx3_file_dir}")
-        process_existing_thread = threading.Thread(target=unpack_pixel_activations, args=(config_empir, global_pool, tpx3_file_counter, tpx3_file_counter_lock))
+        process_existing_thread = threading.Thread(target=empir.unpack_pixel_activations, args=(config_empir, global_pool, tpx3_file_counter, tpx3_file_counter_lock))
         process_existing_thread.start()
 
 if __name__ == "__main__":

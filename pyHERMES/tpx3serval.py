@@ -31,6 +31,11 @@ def print_closing_line_block():
 # Configuring functions
 #--------------------------------------------------------------
 def verify_working_dir(run_configs):
+    """ Verifies the working directory and its sub-directories exist. If they do not exist, they are created.
+
+    Args:
+        run_configs (str): run configuration.
+    """
     
     working_dir = run_configs["WorkingDir"]['path_to_working_dir']                      # Experiment directory 
     run_dir = working_dir + run_configs["WorkingDir"]['run_dir_name']                   # Setting the parent dir for the run
@@ -53,6 +58,15 @@ def verify_working_dir(run_configs):
 
 # Updated function to handle newer configuration options in run_config.ini
 def config_run(config_file='run_config.ini',run_name="dummy"):
+    """ Configures the run settings based on the run_config.ini file.
+
+    Args:
+        config_file (str, optional): Run configuration file. Defaults to 'run_config.ini'.
+        run_name (str, optional): Name of the run. Defaults to "dummy".
+
+    Returns:
+        _type_: _description_
+    """
     # Initialize ConfigParser
     config = configparser.ConfigParser()
     

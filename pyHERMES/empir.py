@@ -1,5 +1,5 @@
 
-import os, sys, shutil
+import os, shutil, glob
 import subprocess
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
@@ -10,7 +10,8 @@ from multiprocessing import Value, Lock
 import zipfile
 
 
-
+######################################################################################
+# Class for configuring the processing of tpx3 files using EMPIR binaries
 #-------------------------------------------------------------------------------------
 class empirConfig:
     """ A configure class for the processing of tpx3 files using EMPIR binaries from 
@@ -127,18 +128,55 @@ class empirConfig:
             else:
                 if(verbose_level>=1):
                     print(f"Found {dir_name}")
+######################################################################################
 
+
+
+
+
+######################################################################################
+# Functions for processing tpx3 files using EMPIR binaries
+#-------------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------------
 def zip_file(directory, filename):  
+    """Zip a file in a specified directory.
+
+    Args:
+        directory (str): The directory containing the file to zip.
+        filename (str): The name of the file to zip.
+    """
     with zipfile.ZipFile(os.path.join(directory, filename + '.zip'), 'w', zipfile.ZIP_DEFLATED) as zipf:
         zipf.write(os.path.join(directory, filename), arcname=filename)
 
-#-------------------------------------------------------------------------------------
 
-def process_pixels_to_photons(input_dir="", tpx3_zip_file_name="", dspace=10, dtime=1e-06, nPxMin=2, use_tdc1=False, output_dir="./", log_dir="./"):
+#-------------------------------------------------------------------------------------
+def check_for_files(directory, extension,verbose_level=0):
+    """Check if any file with a specific extension exists in a directory.
+
+    Args:
+        directory (str): The directory to check.
+        extension (str): The file extension to look for.
+
+    Returns:
+        bool: True if any file with the specified extension exists in the directory, False otherwise.
     """
-    Unzips the .tpx3 file, processes it, and logs the output. Then removes the unzipped file.
+    check_for_files = any(glob.glob(os.path.join(directory, f'*{extension}')))
+    if verbose_level == 1:
+        print(f"Checking for files with extension {extension} in {directory}")
+        if check_for_files == True:
+            print(f"Found files with extension {extension} in {directory}")
+        else:
+            print(f"No files found with extension {extension} in {directory}")
+    
+    return check_for_files
+
+
+#-------------------------------------------------------------------------------------
+def process_pixels_to_photons(input_dir="", tpx3_file_name="", dspace=10, dtime=1e-06, nPxMin=2, use_tdc1=False, output_dir="./", log_dir="./"):
+    """ Runs empir_pixel2photon_tpx3spidr with the user-defined parameters. Input and output files are specified by the user.
+    
+    Note: You need to have the EMPIR binaries installed and in your PATH to use this function.
 
     Args:
         input_dir (str): Directory of the input file.
@@ -147,22 +185,12 @@ def process_pixels_to_photons(input_dir="", tpx3_zip_file_name="", dspace=10, dt
         output_dir (str): Directory to move output files to.
         log_dir (str): Directory for log files.
     """
-    zip_file_path = os.path.join(input_dir, tpx3_zip_file_name)
-    tpx3_file_name = tpx3_zip_file_name.replace('.zip', '')
     input_file = os.path.join(input_dir, tpx3_file_name)
     log_file_name = tpx3_file_name.split(".")[0] + ".pixel2photon"
     log_file = os.path.join(log_dir, log_file_name)
-    list_file_name = tpx3_file_name.replace('.tpx3', '.list')
+    list_file_name = tpx3_file_name.replace('.tpx3', '.empirphot')
     output_file = os.path.join(output_dir, list_file_name)
     tdc_option = "-T" if use_tdc1 else ""
-
-    # Log the unzipping process
-    try:
-        with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
-            zip_ref.extractall(input_dir)
-        unzip_log_msg = f"Successfully unzipped: {zip_file_path}"
-    except Exception as e:
-        unzip_log_msg = f"Error unzipping {zip_file_path}: {e}"
 
     # Prepare the subprocess command for running "empir_pixel2photon_tpx3spidr"
     pixels_to_photons_command = [
@@ -178,20 +206,17 @@ def process_pixels_to_photons(input_dir="", tpx3_zip_file_name="", dspace=10, dt
 
     print(f"EMPIR: Processing pixels to photons for {tpx3_file_name}")
 
-    with open(log_file, 'a') as log_output:
-        log_output.write("<hermes> " + unzip_log_msg + "\n")
-        log_output.write("<hermes> " + pixel_to_photon_run_msg + "\n")
+    with open(log_file, '+w') as log_output:
+        log_output.write("<HERMES> " + pixel_to_photon_run_msg + "\n")
         subprocess.run(pixels_to_photons_command, stdout=log_output, stderr=subprocess.STDOUT)
-
-    # Remove the unzipped tpx3 file after processing
-    os.remove(input_file)
-
     
     
 #-------------------------------------------------------------------------------------
 def process_photons_to_events(input_dir="", list_file_name="", output_dir="./", dspace=3, dtime=100e-6, durationMax=500e-6, log_dir="./"):
-    """
-    Runs empir_photon2event with the user-defined parameters. Input and output files are specified by the user.
+    """Runs empir_photon2event with the user-defined parameters. Input and output files are specified by the user.
+    
+    Note: You need to have the EMPIR binaries installed and in your PATH to use this function.
+    
     Here are the options of empir_photon2event:
         -i, --inputFile     Path to the input file, must not contain commas
         -o. --outputFile    Path to the output file, must not contain commas.
@@ -233,10 +258,17 @@ def process_photons_to_events(input_dir="", list_file_name="", output_dir="./", 
         subprocess.run(photons_to_events_command, stdout=log_output, stderr=subprocess.STDOUT)
 
 #-------------------------------------------------------------------------------------
-# Export pixel activations processes and controllers
-#-------------------------------------------------------------------------------------
 def export_pixel_activations(input_dir="",input_file="",output_dir="",output_file="",log_dir="./"):
-    """
+    """ This function exports pixel activations or hits from a tpx3 file using the binary empir_export_pixelActivations. 
+    
+    Note1: You need to have the EMPIR binaries installed and in your PATH to use this function.
+    
+    Note2: Requires a .tpx3 file as input. The output info of each event will be contained in 5 consecutive doubles: 
+    - x coordinate in pixels on the imaging chip
+    - y coordinate in pixels on the imaging chip
+    - absolute time in seconds
+    - time over threshold in arbitrary units
+    - time relative to the last trigger (nan if the event occurred before the first trigger)
 
     Args:
         input_dir (str, optional): Input directory containing all tpx3 files. Defaults to "".
@@ -257,13 +289,14 @@ def export_pixel_activations(input_dir="",input_file="",output_dir="",output_fil
     
     log_file_name = input_file.split(".")[0] + ".export_pixel_activations"
     export_pixel_activations_run_msg = f"Running command: {' '.join(export_pixel_activations_command)}"
-    print(export_pixel_activations_run_msg)
+    #print(export_pixel_activations_run_msg)
 
     print(f"EMPIR: Exporting pixel activations for {input_file}")
     
     with open(os.path.join(log_dir, log_file_name), 'w') as log_output:
         log_output.write("<hermes> " + export_pixel_activations_run_msg + "\n")
         subprocess.run(export_pixel_activations_command, stdout=log_output, stderr=subprocess.STDOUT)
+
 
 #-------------------------------------------------------------------------------------
 def unpack_pixel_activations(config, process_pool, file_counter, lock):
@@ -281,7 +314,7 @@ def unpack_pixel_activations(config, process_pool, file_counter, lock):
     
     # Get a list of existing TPX3 files in the directory
     existing_tpx3_files = [f for f in os.listdir(config.tpx3_file_dir) if f.endswith(".tpx3")]
-
+    
     # Process each TPX3 file in parallel
     for tpx3_file in existing_tpx3_files:
         # Apply the process_pixels_to_photons function asynchronously
@@ -296,7 +329,7 @@ def unpack_pixel_activations(config, process_pool, file_counter, lock):
         # Increment the file counter
         with lock:
             file_counter.value += 1
-    
+        
     process_pool.close()
     process_pool.join()
     
@@ -312,13 +345,14 @@ def process_existing_tpx3_files(config, process_pool, file_counter, lock):
         file_counter (object): A shared counter for tracking the number of processed files.
         lock (object): A lock for synchronizing access to the file counter.
     """
-    # Get a list of existing TPX3 files in the directory
-    existing_tpx3_files = [f for f in os.listdir(config.tpx3_file_dir) if f.endswith(".tpx3.zip")]
+    existing_tpx3_files = [f for f in os.listdir(config.tpx3_file_dir) if f.endswith(".tpx3")]
+    total_files = len(existing_tpx3_files)
+    print(f"Found {total_files} existing TPX3 files")
 
-    # Process each TPX3 file in parallel
+    async_results = []
+
     for tpx3_file in existing_tpx3_files:
-        # Apply the process_pixels_to_photons function asynchronously
-        process_pool.apply_async(process_pixels_to_photons, args=(
+        async_result = process_pool.apply_async(process_pixels_to_photons, args=(
             config.tpx3_file_dir, 
             tpx3_file, 
             config.pixel_d_space, 
@@ -327,11 +361,26 @@ def process_existing_tpx3_files(config, process_pool, file_counter, lock):
             config.use_tdc1, 
             config.list_file_dir, 
             config.log_file_dir))
+        async_results.append(async_result)
 
-        # Increment the file counter
         with lock:
             file_counter.value += 1
 
+    # Wait for all tasks to complete and handle exceptions
+    for async_result in async_results:
+        try:
+            async_result.get()  # This will re-raise any exceptions encountered in the worker process
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
+
+######################################################################################
+
+
+
+
+######################################################################################
+# Classes for handling file system events
 #-------------------------------------------------------------------------------------
 class Tpx3FilesHandler(FileSystemEventHandler):
     def __init__(self, config, observer, file_counter, lock, stop_delay=30):
@@ -375,6 +424,7 @@ class Tpx3FilesHandler(FileSystemEventHandler):
         # Reset the stop timer each time a file is processed
         self.reset_stop_timer()
 
+
 #-------------------------------------------------------------------------------------
 class ListFilesHandler(FileSystemEventHandler):
     def __init__(self, config, observer, file_counter, lock, stop_delay=30):
@@ -412,7 +462,6 @@ class ListFilesHandler(FileSystemEventHandler):
 
             self.reset_stop_timer()
 
-
 #-------------------------------------------------------------------------------------
 def monitor_tpx3_files(config, file_counter, lock):
     observer = Observer()
@@ -425,6 +474,7 @@ def monitor_tpx3_files(config, file_counter, lock):
     # Return the final count of processed files
     with lock:
         return file_counter.value
+
 
 #-------------------------------------------------------------------------------------
 def monitor_list_files(config, file_counter, lock):
@@ -439,3 +489,4 @@ def monitor_list_files(config, file_counter, lock):
     with lock:
         return file_counter.value
 
+######################################################################################

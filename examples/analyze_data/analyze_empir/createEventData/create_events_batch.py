@@ -10,10 +10,18 @@ def main(run_folder, max_concurrent_jobs=5, verbose_level=0):
     tpx3_file_counter = Value('i', 0)
     tpx3_file_counter_lock = Lock()
     
+    # Create a pool of workers to process the tpx3 files
+    # using a with() statement will close the pool when the work is done
     with Pool(max_concurrent_jobs) as pool:
+        
+        # Loop through the sub directories in the destination directory
         for sub_dir in sub_dirs:
             
+            # Get the name of the sub directory
             sub_dir_name = os.path.basename(sub_dir)
+            
+            # Correct the path to the sub directory [because the dir name in the path twice!]
+            #NOTE: need to get rid of this! Its only here because of the way the data is structured in the test data
             correct_path = os.path.join(sub_dir, sub_dir_name)
             
             # Check to see if the destination directory exists

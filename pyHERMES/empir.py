@@ -399,7 +399,7 @@ def process_existing_photon_files(config, process_pool, file_counter, lock):
             config.photon_d_space, 
             config.photon_d_time, 
             config.photon_max_duration, 
-            config.log_file_dir)
+            config.log_file_dir))
         async_results.append(async_result)
         
         with lock:

@@ -374,6 +374,44 @@ def process_existing_tpx3_files(config, process_pool, file_counter, lock):
             print(f"An error occurred: {e}")
 
 
+#-------------------------------------------------------------------------------------
+def process_existing_photon_files(config, process_pool, file_counter, lock):
+    """
+    Process existing TPX3 files in the specified directory.
+
+    Args:
+        config (object): An object containing configuration parameters.
+        process_pool (object): A process pool for parallel processing.
+        file_counter (object): A shared counter for tracking the number of processed files.
+        lock (object): A lock for synchronizing access to the file counter.
+    """
+    existing_photon_files = [f for f in os.listdir(config.list_file_dir) if f.endswith(".empirphot")]
+    total_files = len(existing_photon_files)
+    print(f"Found {total_files} existing empirphot files")
+
+    async_results = []
+
+    for photon_file in existing_photon_files:
+        async_result = process_pool.apply_async(process_photons_to_events, args=(
+            config.list_file_dir, 
+            photon_file, 
+            config.event_file_dir, 
+            config.photon_d_space, 
+            config.photon_d_time, 
+            config.photon_max_duration, 
+            config.log_file_dir)
+        async_results.append(async_result)
+        
+        with lock:
+            file_counter.value += 1
+
+    # Wait for all tasks to complete and handle exceptions
+    for async_result in async_results:
+        try:
+            async_result.get()  # This will re-raise any exceptions encountered in the worker process
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
 ######################################################################################
 
 

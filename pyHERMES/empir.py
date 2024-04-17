@@ -207,6 +207,7 @@ def process_pixels_to_photons(input_dir="", tpx3_file_name="", dspace=10, dtime=
     print(f"EMPIR: Processing pixels to photons for {tpx3_file_name}")
 
     with open(log_file, '+w') as log_output:
+        log_output.write("\n--------\n")
         log_output.write("<HERMES> " + pixel_to_photon_run_msg + "\n")
         subprocess.run(pixels_to_photons_command, stdout=log_output, stderr=subprocess.STDOUT)
     
@@ -236,7 +237,7 @@ def process_photons_to_events(input_dir="", list_file_name="", output_dir="./", 
     input_file = os.path.join(input_dir, list_file_name)                    # creating full path+name for input tpx3 file. 
     log_file_name = os.path.splitext(list_file_name)[0] + ".photon2event"   # creating name for corresponding log file  
     log_file = os.path.join(log_dir, log_file_name)                         # creating full path+name for log file.
-    event_file_name = list_file_name.split(".")[0]+".event"                 # creating name for output event file
+    event_file_name = list_file_name.split(".")[0]+".empirevent"                 # creating name for output event file
     output_file = os.path.join(output_dir, event_file_name)                 # creating full path+name for output event file.
     
     # Prepare the subprocess command
@@ -254,7 +255,90 @@ def process_photons_to_events(input_dir="", list_file_name="", output_dir="./", 
     print("EMPIR: Processing photons to events for {}".format(os.path.splitext(list_file_name)[0]))
     
     with open(log_file, 'a') as log_output:
-        log_output.write("<hermes> " + photons_to_events_run_msg + "\n")
+        log_output.write("\n--------\n")
+        log_output.write("<HERMES> " + photons_to_events_run_msg + "\n")
+        subprocess.run(photons_to_events_command, stdout=log_output, stderr=subprocess.STDOUT)
+
+#-------------------------------------------------------------------------------------
+def process_event_files_to_image_stack(event_file_dir="./",input_file_option=None, event_file_list = None, output_dir="./", x_pixels=512, y_pixels = 512, nPhotons_min=0,nPhotons_max=18446744073709551615, time_extTrigger = False, time_res_s=None, time_limit=None,psd_min="",psd_max="", log_dir="./"):
+    """Runs empir_event2image with the user-defined parameters. Input and output files are specified by the user.
+    
+    Note: You need to have the EMPIR binaries installed and in your PATH to use this function.
+    
+    Here are the options of empir_event2image:
+    -i, --inputFiles       Comma separated list of paths to the input files
+    -I, --inputFolder      All files with the .empirevent extension directly in this folder will be processed
+        --inputListFile    Path of text file containing one input file per line
+    -o, --outputFile       Path (including file name) for the output
+    -x, --size_x           Number of pixels in x direction for the final image (default: 512 px)
+    -y, --size_y           Number of pixels in y direction for the final image (defaults to match size in x dimension)
+    -m, --nPhotons_min     Only events with at least this number of photons will be used for the image (default: 0)
+    -M, --nPhotons_max     Only events with at most this number of photons will be used for the image (default: 18446744073709551615)
+    -E, --time_extTrigger  Use the time relative to the external trigger for binning (default: use absolute time)
+    -t, --time_res_s       Timing resolution in seconds for creating an 3D image sequence (default: 2D image is created, integrated in time)
+    -T, --time_limit       Maximum of "time_res_s" bins for the 3D image sequence
+    -p, --psd_min          Minimum PSD value
+    -P, --psd_max          Maximum PSD value
+
+    Args:
+        input_path (str): Path to the input file (.list).
+        dest (str): Destination directory name.
+        output_path (str): Path to the output file (.event).
+        dspace (int): Distance in space for photon search [px].
+        dtime (float): Distance in time for photon search [s].
+        durationMax (float): Maximum duration to look for photons [s].
+    """
+    
+    if input_file_option == "csv_list":
+        if event_file_list is None:
+            raise ValueError("No event file list provided")
+        elif len(event_file_list) == 0:
+            raise ValueError("Empty event file list provided")
+    elif input_file_option == "folder":
+        if event_file_dir is None:
+            raise ValueError("No event file directory provided")
+    elif input_file_option == "text_file":
+        # check to see if file exists
+        
+        
+    else:
+        raise ValueError("No input file option provided. Please provide either 'csv_list', 'folder', or 'text_file' as input_file_option.")
+
+   
+    # add path to each file in the event_file_list
+    event_file_list = ",".join([os.path.join(event_file_dir, f) for f in event_file_list.split(",")])
+   
+    #Create log file
+    log_file_name = "event2image.log"                           # creating name for corresponding log file  
+    log_file = os.path.join(log_dir, log_file_name)             # creating full path+name for log file.
+    
+    # Create output image file and set path.
+    image_file_name = f"image_m{str(nPhotons_min)}_M{str(nPhotons_max)}_x{x_pixels}_y{y_pixels}_t{time_res_s}_T{time_limit}_p{psd_min}_P{psd_max}.tiff"
+    output_file = os.path.join(output_dir, image_file_name)     # creating full path+name for output event file.
+    print(f"Creating image stack {output_file}")
+    
+    # Prepare the subprocess command
+    photons_to_events_command = [
+        "empir_event2image",
+        "-m", str(nPhotons_min),
+        "-M", str(nPhotons_max),
+        "-E" if time_extTrigger else "", 
+        "-x", str(x_pixels),
+        "-y", str(y_pixels),
+        "-t", str(time_res_s) if time_res_s is not None else "",
+        "-T", str(time_limit) if time_limit is not None else "",
+        "-p", str(psd_min) if psd_min is not None else "",
+        "-P", str(psd_max) if psd_max is not None else "",
+        "-I", event_file_dir,
+        "-o", output_file
+    ]
+    
+    photons_to_events_run_msg = f"Running command: {' '.join(photons_to_events_command)}"
+    print(photons_to_events_run_msg)
+    
+    with open(log_file, 'a') as log_output:
+        log_output.write("\n--------\n")
+        log_output.write("<HERMES> " + photons_to_events_run_msg + "\n")
         subprocess.run(photons_to_events_command, stdout=log_output, stderr=subprocess.STDOUT)
 
 #-------------------------------------------------------------------------------------
@@ -299,42 +383,6 @@ def export_pixel_activations(input_dir="",input_file="",output_dir="",output_fil
 
 
 #-------------------------------------------------------------------------------------
-def unpack_pixel_activations(config, process_pool, file_counter, lock):
-    """This function takes the configuration object, process pool, file counter, and lock as arguments. It reads TPX3 files from the specified directory in the configuration object and exports the pixel activations to corresponding pixel activation files in the log file directory.
-
-    Args:
-        config (object): The configuration object containing TPX3 file directory and log file directory.
-        process_pool (object): The process pool used for parallel processing.
-        file_counter (object): The shared counter for tracking the number of processed files.
-        lock (object): The lock used for synchronizing access to the file counter.
-    """
-    # check if empir_export_pixelActivations is in your path
-    if shutil.which("empir_export_pixelActivations") is None:
-        raise FileNotFoundError("empir_export_pixelActivations not found in path. Please check if EMPIR binaries are installed.")
-    
-    # Get a list of existing TPX3 files in the directory
-    existing_tpx3_files = [f for f in os.listdir(config.tpx3_file_dir) if f.endswith(".tpx3")]
-    
-    # Process each TPX3 file in parallel
-    for tpx3_file in existing_tpx3_files:
-        # Apply the process_pixels_to_photons function asynchronously
-        process_pool.apply_async(export_pixel_activations, args=(
-            config.tpx3_file_dir, 
-            tpx3_file, 
-            config.export_file_dir, 
-            tpx3_file.replace(".tpx3", ".pixelActivations"), 
-            config.log_file_dir)
-        )
-
-        # Increment the file counter
-        with lock:
-            file_counter.value += 1
-        
-    process_pool.close()
-    process_pool.join()
-    
-
-#-------------------------------------------------------------------------------------
 def process_existing_tpx3_files(config, process_pool, file_counter, lock):
     """
     Process existing TPX3 files in the specified directory.
@@ -347,7 +395,7 @@ def process_existing_tpx3_files(config, process_pool, file_counter, lock):
     """
     existing_tpx3_files = [f for f in os.listdir(config.tpx3_file_dir) if f.endswith(".tpx3")]
     total_files = len(existing_tpx3_files)
-    print(f"Found {total_files} existing TPX3 files")
+    print(f"Found {total_files} existing TPX3 files in {config.tpx3_file_dir}")
 
     async_results = []
 
@@ -387,7 +435,7 @@ def process_existing_photon_files(config, process_pool, file_counter, lock):
     """
     existing_photon_files = [f for f in os.listdir(config.list_file_dir) if f.endswith(".empirphot")]
     total_files = len(existing_photon_files)
-    print(f"Found {total_files} existing empirphot files")
+    print(f"Found {total_files} existing empirphot files in {config.list_file_dir}")
 
     async_results = []
 
@@ -411,6 +459,95 @@ def process_existing_photon_files(config, process_pool, file_counter, lock):
             async_result.get()  # This will re-raise any exceptions encountered in the worker process
         except Exception as e:
             print(f"An error occurred: {e}")
+
+
+#-------------------------------------------------------------------------------------
+def process_existing_event_files(config, process_pool, file_counter, lock, file_input_option=None):
+    """
+    Process existing TPX3 files in the specified directory.
+
+    Args:
+        config (object): An object containing configuration parameters.
+        process_pool (object): A process pool for parallel processing.
+        file_counter (object): A shared counter for tracking the number of processed files.
+        lock (object): A lock for synchronizing access to the file counter.
+    """
+    async_results = []
+    
+    # Get a list of existing event files in the directory
+    existing_event_files = [f for f in os.listdir(config.event_file_dir) if f.endswith(".empirevent")]
+    
+    # Create csv string based on list of existing event files
+    event_files_csv_string = ",".join(existing_event_files)
+    
+    total_files = len(existing_event_files)
+    print(f"Found {total_files} existing event files in {config.event_file_dir}")
+
+    async_result = process_pool.apply_async(process_event_files_to_image_stack, args=(
+        config.event_file_dir, 
+        file_input_option,
+        event_files_csv_string, 
+        config.final_file_dir, 
+        config.size_x,
+        config.size_y,
+        config.nPhotons_min,
+        config.nPhotons_max,
+        config.time_extTrigger,
+        config.time_res_s,
+        config.time_limit,
+        config.psd_min,
+        config.psd_max,
+        config.log_file_dir))
+    
+    async_results.append(async_result)
+ 
+
+    
+    with lock:
+        file_counter.value += 1
+
+    # Wait for all tasks to complete and handle exceptions
+    for async_result in async_results:
+        try:
+            async_result.get()  # This will re-raise any exceptions encountered in the worker process
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
+
+#-------------------------------------------------------------------------------------
+def unpack_pixel_activations(config, process_pool, file_counter, lock):
+    """This function takes the configuration object, process pool, file counter, and lock as arguments. It reads TPX3 files from the specified directory in the configuration object and exports the pixel activations to corresponding pixel activation files in the log file directory.
+
+    Args:
+        config (object): The configuration object containing TPX3 file directory and log file directory.
+        process_pool (object): The process pool used for parallel processing.
+        file_counter (object): The shared counter for tracking the number of processed files.
+        lock (object): The lock used for synchronizing access to the file counter.
+    """
+    # check if empir_export_pixelActivations is in your path
+    if shutil.which("empir_export_pixelActivations") is None:
+        raise FileNotFoundError("empir_export_pixelActivations not found in path. Please check if EMPIR binaries are installed.")
+    
+    # Get a list of existing TPX3 files in the directory
+    existing_tpx3_files = [f for f in os.listdir(config.tpx3_file_dir) if f.endswith(".tpx3")]
+    
+    # Process each TPX3 file in parallel
+    for tpx3_file in existing_tpx3_files:
+        # Apply the process_pixels_to_photons function asynchronously
+        process_pool.apply_async(export_pixel_activations, args=(
+            config.tpx3_file_dir, 
+            tpx3_file, 
+            config.export_file_dir, 
+            tpx3_file.replace(".tpx3", ".pixelActivations"), 
+            config.log_file_dir)
+        )
+
+        # Increment the file counter
+        with lock:
+            file_counter.value += 1
+        
+    process_pool.close()
+    process_pool.join()
 
 ######################################################################################
 

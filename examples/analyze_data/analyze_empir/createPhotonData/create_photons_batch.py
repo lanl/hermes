@@ -1,6 +1,5 @@
 import os, sys
 from multiprocessing import Pool
-import threading
 from multiprocessing import Value, Lock
 from pyHERMES import empir
 

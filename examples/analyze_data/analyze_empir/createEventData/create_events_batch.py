@@ -1,16 +1,15 @@
 import os, sys
 from multiprocessing import Pool
-import threading
 from multiprocessing import Value, Lock
 from pyHERMES import empir
 
 
 def main(run_folder, max_concurrent_jobs=5, verbose_level=0):
     sub_dirs = [f.path for f in os.scandir(run_folder) if f.is_dir()]
-    tpx3_file_counter = Value('i', 0)
-    tpx3_file_counter_lock = Lock()
+    photon_file_counter = Value('i', 0)
+    photon_file_counter_lock = Lock()
     
-    # Create a pool of workers to process the tpx3 files
+    # Create a pool of workers to process the photon files
     # using a with() statement will close the pool when the work is done
     with Pool(max_concurrent_jobs) as pool:
         
@@ -37,13 +36,14 @@ def main(run_folder, max_concurrent_jobs=5, verbose_level=0):
                 # Check to if sub directories in the destination directory exists
                 config_empir.check_or_create_sub_dirs()
             
-                # Check for existing .tpx3 files
-                existing_tpx3_files = empir.check_for_files(config_empir.tpx3_file_dir, '.tpx3', verbose_level)
+                # Check for existing .photon files
+                existing_photon_files = empir.check_for_files(config_empir.list_file_dir, '.empirphot', verbose_level)
             
                 # Set the parameters for pixel_to_photon conversion
-                config_empir.set_pixel_to_photon_params(d_space=5,d_time=5E-8,min_number=2,use_tdc1=True)
+                config_empir.set_photon_to_event_params(d_space=2,d_time=15E-6,max_duration=100E-6)
             
-                empir.process_existing_tpx3_files(config_empir, pool, tpx3_file_counter, tpx3_file_counter_lock)
+                empir.process_existing_photon_files(config_empir, pool, photon_file_counter, photon_file_counter_lock)
+    
         
 
         

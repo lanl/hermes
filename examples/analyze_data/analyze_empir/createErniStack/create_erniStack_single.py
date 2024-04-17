@@ -42,12 +42,12 @@ def main(dest, max_concurrent_jobs=5, verbose_level=0):
             config_empir.check_or_create_sub_dirs()
         
             # Check for existing .photon files
-            existing_photon_files = empir.check_for_files(config_empir.list_file_dir, '.empirphot', verbose_level)
+            existing_photon_files = empir.check_for_files(config_empir.event_file_dir, '.event', verbose_level)
         
             # Set the parameters for pixel_to_photon conversion
-            config_empir.set_photon_to_event_params(d_space=2,d_time=15E-6,max_duration=100E-6)
+            config_empir.set_event_to_image_params( size_x=512, size_y=512, nPhotons_min=2, nPhotons_max=9999, time_extTrigger=True, time_res_s=10E-6, time_limit=2400, psd_min=1E-7, psd_max=100)
         
-            empir.process_existing_photon_files(config_empir, pool, photon_file_counter, photon_file_counter_lock)
+            empir.process_existing_event_files(config=config_empir, process_pool=pool, file_counter=photon_file_counter, lock=photon_file_counter_lock,file_input_option="folder")
     
     
 if __name__ == "__main__":

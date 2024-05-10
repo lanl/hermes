@@ -76,7 +76,7 @@ HERMES requires setting up the `HERMES_HOME` environment variable as well as add
    ```sh
    export HERMES_HOME=/path/to/hermes
    export cHERMES_DIR=$HERMES_HOME/cHERMES
-   export PYTHONPATH=$PYTHONPATH:$HERMES_HOME/pyHERMES
+   export PYTHONPATH=$PYTHONPATH:$HERMES_HOME
    ```
 3. Replace /path/to/hermes with the actual installation path of HERMES on your machine.
 4. Save the file.

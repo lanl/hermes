@@ -17,6 +17,8 @@ class DataLoader:
             return self.load_from_csv()
         elif self.filepath.endswith('.rawSignals'):
             return self.load_from_binary()
+        elif self.filepath.endswith('.pixelActivations'):
+            return self.load_from_empir()
         else:
             raise ValueError("Unsupported file type. Please use either a .csv or .rawSignals file.")
 
@@ -47,6 +49,12 @@ class DataLoader:
         ])
         print(f"{len(signals)} packets loaded from binary file!")
         df = pd.DataFrame(signals)
+        return df
+    
+    def load_from_empir(self):
+        column_names = ['typeOfEvent', 'ToA_final', 'xpixel', 'ypixel', 'spaceGroup', 'timeGroup']
+        df = pd.read_csv(self.filepath, sep='\s+', header=None, names=column_names)
+        print("Pixel data loaded from empir file!")
         return df
 
 class PlotDiagnostics:

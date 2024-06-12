@@ -296,11 +296,7 @@ def process_event_files_to_image_stack(event_file_dir="./",input_file_option=Non
             raise ValueError("Empty event file list provided")
     elif input_file_option == "folder":
         if event_file_dir is None:
-            raise ValueError("No event file directory provided")
-    elif input_file_option == "text_file":
-        # check to see if file exists
-        
-        
+            raise ValueError("No event file directory provided")    
     else:
         raise ValueError("No input file option provided. Please provide either 'csv_list', 'folder', or 'text_file' as input_file_option.")
 

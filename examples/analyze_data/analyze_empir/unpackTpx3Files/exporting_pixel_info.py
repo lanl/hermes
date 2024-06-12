@@ -29,9 +29,11 @@ def main(dest, max_concurrent_jobs=5):
 
     # Check for existing .tpx3 files
     existing_tpx3_files = [f for f in os.listdir(config_empir.tpx3_file_dir) if f.endswith(".tpx3")]
+    
 
     # Thread for exporting tpx3 files
     if existing_tpx3_files:
+        #print(existing_tpx3_files)
         process_existing_thread = threading.Thread(target=empir.unpack_pixel_activations, args=(config_empir, global_pool, tpx3_file_counter, tpx3_file_counter_lock))
         process_existing_thread.start()
 

@@ -3,6 +3,7 @@
 #include <sstream>
 #include <iostream>
 
+
 // Trim function to remove leading and trailing whitespace
 std::string trim(const std::string& str) {
     size_t first = str.find_first_not_of(' ');
@@ -50,6 +51,7 @@ void logConfigError(const std::string& key, const std::string& value, const std:
  * by the keys in the file. Invalid or unexpected key-value pairs will generate errors to stderr.
  * 
  * Supported configuration parameters include:
+ * - batchMode: Whether to run in batch mode (true/false).
  * - rawTPX3Folder: Folder for raw TPX3 files.
  * - rawTPX3File: Specific raw TPX3 file name.
  * - writeRawSignals: Whether to write raw signals (true/false).
@@ -95,8 +97,18 @@ bool readConfigFile(const std::string &filename, configParameters &params) {
         try {
             if (key == "rawTPX3Folder") params.rawTPX3Folder = value;
             else if (key == "rawTPX3File") {
-                params.rawTPX3File = value;
-                params.runHandle = grabRunHandle(value);
+
+                // If the value is empty, blank spaces, "ALL" then analyze all files in the folder in batch mode. 
+
+                if (value.empty() || value == "ALL" || value == "all") {
+                    params.batchMode = true;
+                    params.runHandle = "";
+                    params.rawTPX3File = "";
+                } else { // Otherwise, process the file in single mode.
+                    params.batchMode = false;
+                    params.rawTPX3File = value;
+                    params.runHandle = grabRunHandle(value);
+                }
             }
             else if (key == "writeRawSignals") params.writeRawSignals = stringToBool(value);
             else if (key == "outputFolder") params.outputFolder = value;
@@ -123,6 +135,7 @@ bool readConfigFile(const std::string &filename, configParameters &params) {
 void printParameters(const configParameters &params) {
     // If the program reaches this point, the configuration file was successfully read
     std::cout << "=================== Config parameters ====================" << std::endl;
+    std::cout << "batchMode: " << (params.batchMode ? "true" : "false") << std::endl;
     std::cout << "inputTPX3Folder: " << params.rawTPX3Folder << std::endl;
     std::cout << "inputTPX3File: " << params.rawTPX3File << std::endl;
     std::cout << "writeRawSignals: " << (params.writeRawSignals ? "true" : "false") << std::endl;

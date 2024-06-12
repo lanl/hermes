@@ -11,11 +11,7 @@ using namespace std;
 
 int main(int argc, char *argv[]){  
 
-    std::chrono::duration<double> hermesTime;
-    auto hermesStartTime = std::chrono::high_resolution_clock::now();
-
     configParameters configParams;
-    tpx3FileDiagnostics tpxFileInfo;
 
     // Check for the number of command-line arguments
     if (argc < 2) {
@@ -31,17 +27,7 @@ int main(int argc, char *argv[]){
         return 1; // Exit the program with an error code
     } 
 
-    // Print out config parameters based on verbosity level
-    if(configParams.verboseLevel>=2){printParameters(configParams);}
-    
-    //tpxFileInfo = unpackAndSortTPX3FileInSequentialBuffers(configParams);
-    tpxFileInfo = unpackAndSortTPX3File(configParams);
-
-    auto hermesStopTime = std::chrono::high_resolution_clock::now();
-    hermesTime = hermesStopTime - hermesStartTime;
-    tpxFileInfo.totalHermesTime = hermesTime.count();
-
-    if(configParams.verboseLevel>=2){printOutUnpackingDiagnostics(tpxFileInfo);}
+    processTPX3Files(configParams);
 
 	return 0;
 }

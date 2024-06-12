@@ -4,7 +4,9 @@
 
 
 #include "dataPacketProcessor.h"
+#include "diagnostics.h"
 #include "structures.h"
+#include "configReader.h"
 
 using namespace std;
 
@@ -48,6 +50,31 @@ std::chrono::duration<double> bufferUnpackTime;
 std::chrono::duration<double> bufferSortTime;
 std::chrono::duration<double> bufferWriteTime;
 std::chrono::duration<double> bufferClusterTime;
+
+
+/**
+ * @brief Get a list of all files in a directory of a specific type or extention.
+ *
+ * This function takes a configParameters structure as input and returns a vector of strings containing the full paths of all files in the directory specified by the rawTPX3Folder field of the configParameters structure. The function uses the filesystem library to iterate over the directory and obtain the full paths of all files within it. The function then returns a vector of strings containing the full paths of all files in the directory.
+ *
+ * @param configParams A const reference to the configParameters structure that includes control parameters for the operation, such as the directory containing the raw TPX3 files.
+ * @return std::vector<std::string> A vector of strings containing the full paths of all files in the directory specified by the rawTPX3Folder field of the configParameters structure.
+ * 
+ */
+std::vector<std::string> getFilesInDirectory(configParameters configParams){
+    std::vector<std::string> files;
+    // grab all files with a given extension of ".tpx3"
+    for (const auto & entry : std::filesystem::directory_iterator(configParams.rawTPX3Folder)){
+        if (entry.path().extension() == ".tpx3"){
+            // only grab the file name and not the full path
+            files.push_back(entry.path().filename().string());
+
+            //files.push_back(entry.path().string());
+        }
+    }
+    return files;
+}
+
 
 /**
  * @brief Sorts an array of signalData structures by the ToaFinal field and updates sorting time diagnostics.
@@ -545,15 +572,11 @@ void processDataPackets(const configParameters& configParams, tpx3FileDiagnostic
 
 
 /**
- * @brief Takes a Global Time Stamp data packet from a tpx3 file, processes it, 
- * and updates the corresponding signal data structure. 
- *
- * This function takes the data packet pass through unsigned long long dataPacket and processes the timing of 
- * the Global Time Stamp hit. It then update the corresponding signalData structure, which is passed by reference.  
+ * @brief  Unpacks a TPX3 file, sorts the signals, clusters the pixels, and writes raw signals to a file.
  * 
- * @param dataPacket    64 byte data packet that contains raw timing info
- * @param signalData    HERMES defined structure that contain raw data info from data packets.
- * @return nothing
+ * @param configParams    64 byte data packet that contains raw timing info
+ * 
+ * @return tpx3FileDiagnostics  HERMES defined structure that contains various diagnostic info used during the unpacking processes
  */ 
 tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams){
     
@@ -568,7 +591,7 @@ tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams){
         std::cerr << "Error: " << e.what() << std::endl;
         return {};  // Handle the error as needed, possibly returning an error code or an empty object
     }  
-    // If writeRawSignals is true, attempt to open the output file for raw signals
+    // If writeRawSignals is ``true, attempt to open the output file for raw signals
     if(configParams.writeRawSignals == true){
     // If writeRawSignals is true, attempt to open the output file for raw signals
         try {rawSignalsFile = openRawSignalsOutputFile(configParams);} 
@@ -619,7 +642,78 @@ tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams){
     return tpx3FileInfo;        // Return the tpx3file info. 
 }
 
+/**
+ * @brief Processes TPX3 files based on the configuration parameters.
+ * 
+ * This function processes TPX3 files based on the configuration parameters provided. It can process a single file or all files in a directory,
+ * depending on the batchMode flag in the configParameters structure. The function prints out information based on the verbosity level specified in the configParameters.
+ * 
+ * 
+ * @param  configParams    Configuration parameters for the operation, including the verbosity level for logging.
+ * @param  verboseLevel    Verbosity level for logging (default is 0).
+ * 
+ * @return nothing
+ */
+void processTPX3Files(configParameters configParams){
 
+    tpx3FileDiagnostics tpxFileInfo;
+
+    // Print out config parameters based on verbosity level
+    if(configParams.verboseLevel>=2){printParameters(configParams);}
+
+    // Check for bacthMode
+    if (configParams.batchMode){
+        if (configParams.verboseLevel >= 1){
+            std::cout << "Batch mode is enabled. Processing all files in the directory." << std::endl;
+        }
+        // Get a list of all the files in the directory
+        std::vector<std::string> tpx3Files = getFilesInDirectory(configParams);
+        // Loop through all the files in the directory
+        for (const auto& tpx3File : tpx3Files){
+
+            // Grab start time for unpacking
+            std::chrono::duration<double> hermesTime;
+            auto hermesStartTime = std::chrono::high_resolution_clock::now();
+
+            // Set the rawTPX3File to the current file
+            configParams.rawTPX3File = tpx3File;
+
+            // Set the handle to the current file
+            configParams.runHandle = grabRunHandle(tpx3File);
+
+            // Process the single file
+            std::cout << "Processing file: " << tpx3File << std::endl;  
+            tpxFileInfo = unpackAndSortTPX3File(configParams);
+
+            // Grab stop time for unpacking and calculate total times
+            auto hermesStopTime = std::chrono::high_resolution_clock::now();
+            hermesTime = hermesStopTime - hermesStartTime;
+            tpxFileInfo.totalHermesTime = hermesTime.count();
+
+            // Print out diagnostics based on verbosity level
+            if(configParams.verboseLevel>=2){printOutUnpackingDiagnostics(tpxFileInfo);}
+            
+        }
+
+    } else {
+        // Process a single file
+
+        // Grab start time for unpacking
+        std::chrono::duration<double> hermesTime;
+        auto hermesStartTime = std::chrono::high_resolution_clock::now();
+
+        // Process the single file
+        tpxFileInfo = unpackAndSortTPX3File(configParams);
+        
+        // Grab stop time for unpacking and calculate total times
+        auto hermesStopTime = std::chrono::high_resolution_clock::now();
+        hermesTime = hermesStopTime - hermesStartTime;
+        tpxFileInfo.totalHermesTime = hermesTime.count();
+
+        // Print out diagnostics based on verbosity level
+        if(configParams.verboseLevel>=2){printOutUnpackingDiagnostics(tpxFileInfo);}
+    }
+}
 
 
 

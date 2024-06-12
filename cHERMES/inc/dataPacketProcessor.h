@@ -15,6 +15,7 @@
 #include "structures.h"
 #include "photonRecon.h"
 
+std::vector<std::string> getFilesInDirectory(configParameters configParams);
 std::ifstream openTPX3File(const std::string& path, tpx3FileDiagnostics& tpx3FileInfo);
 std::ofstream openRawSignalsOutputFile(const configParameters& configParams);
 void processDataPackets(const configParameters& configParams, tpx3FileDiagnostics& tpx3FileInfo, const uint64_t* packets, signalData* signalDataArray);
@@ -35,6 +36,7 @@ void processSPIDRControlPacket(uint16_t bufferNumber, unsigned long long dataPac
 void processTPX3ControlPacket(uint16_t bufferNumber, unsigned long long dataPacket, signalData &signalData);
 
 // Unpack and process entire TPX3File
+void processTPX3Files(configParameters configParams);
 tpx3FileDiagnostics unpackAndSortTPX3File(configParameters configParams);
 
 // Unpack and process TPX3Files buffer by buffer

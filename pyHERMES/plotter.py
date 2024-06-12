@@ -52,6 +52,19 @@ class DataLoader:
         return df
     
     def load_from_empir(self):
+        """
+            The information of each event is contained in 5 consecutive doubles: 
+            - x coordinate in pixels on the imaging chip
+            - y coordinate in pixels on the imaging chip
+            - absolute time in seconds
+            - time over threshold in arbitrary units
+            - time relative to the last trigger (nan if the event occured before the first trigger)
+
+        Returns:
+            dataframe: pandas dataframe containing the pixel data
+        """
+        
+        
         column_names = ['typeOfEvent', 'ToA_final', 'xpixel', 'ypixel', 'spaceGroup', 'timeGroup']
         df = pd.read_csv(self.filepath, sep='\s+', header=None, names=column_names)
         print("Pixel data loaded from empir file!")

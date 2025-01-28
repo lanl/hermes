@@ -16,7 +16,7 @@ HERMES/
 │   │   ├── CMakeLists.txt   # Build instructions (modern approach over Makefile)
 │   ├── python/              # Python-based acquisition, analysis, and wrappers
 │   │   ├── acquisition/     # Data acquisition scripts
-│   │   ├── wrappers/        # Python interfaces for C++ and commercial tools
+│   │   ├── empir/          # Python interfaces EMPIR
 │   │   ├── analysis/        # Python-based analysis scripts
 │   │   ├── utils/           # Shared Python utilities (logging, config parsing, etc.)
 │   │   ├── __init__.py      # Makes this a package

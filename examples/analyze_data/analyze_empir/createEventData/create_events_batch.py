@@ -1,7 +1,7 @@
 import os, sys
 from multiprocessing import Pool
 from multiprocessing import Value, Lock
-from pyHERMES import empir
+from python import empir
 
 
 def main(run_folder, max_concurrent_jobs=5, verbose_level=0):

@@ -2,7 +2,7 @@ import os, sys
 from multiprocessing import Pool
 import threading
 from multiprocessing import Value, Lock
-from pyHERMES import empir
+from python import empir
 
 #-------------------------------------------------------------------------------------
 def main(dest, max_concurrent_jobs=5):

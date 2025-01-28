@@ -1,5 +1,5 @@
 import argparse
-import pyHERMES.plotter as ph_plotter   # pyhermes plotter class.
+import python.plotter as ph_plotter   # pyhermes plotter class.
 
 # Parse command line arguments
 parser = argparse.ArgumentParser(description='Plot diagnostics for a given data file.')

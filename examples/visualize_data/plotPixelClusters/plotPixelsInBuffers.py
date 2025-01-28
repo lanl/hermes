@@ -1,5 +1,5 @@
 import argparse
-import pyHERMES.plotter as ph_plotter   # pyhermes plotter class.
+import python.plotter as ph_plotter   # pyhermes plotter class.
 import matplotlib.pyplot as plt
 
 # Parse command line arguments

@@ -1,3 +1,10 @@
+# HERMES: TPX3Cam Data Acquisition & Analysis
+
+HERMES is a software framework designed for **facilitating the acquisition and analysis of TPX3Cam data**. It consists of **C++** modules for data unpacking and analysis, as well as **Python** scripts for data acquisition and interfacing with commercial tools.
+
+## 📂 Project Structure
+
+```
 HERMES/
 ├── src/
 │   ├── cpp/                 # C++ codebase for unpacking & analysis
@@ -43,3 +50,70 @@ HERMES/
 ├── setup.py                 # Python packaging setup (if applicable)
 ├── LICENSE
 └── README.md
+```
+
+## 🛠 Build & Installation
+
+### **Building C++ Code**
+```sh
+cd HERMES/src/cpp
+mkdir build && cd build
+cmake ..
+make
+```
+
+### **Installing Python Dependencies**
+```sh
+pip install -r requirements.txt
+```
+
+## 🚀 Usage
+
+### **Running Python Acquisition**
+```sh
+python3 src/python/acquisition/tpx3cam_acquire.py --config shared/config/settings.yaml
+```
+
+### **Using Python Wrapper for C++ Unpacker**
+```python
+from hermes.wrappers import unpacker
+data = unpacker.load_tpx3_data("data.bin")
+```
+
+## ✅ Testing
+
+### **Running Python Tests**
+```sh
+pytest tests/python
+```
+
+### **Running C++ Tests**
+```sh
+cd HERMES/src/cpp/build
+make test
+```
+
+## 🔗 Integration: Python & C++
+
+- Use **`pybind11`**, **`ctypes`**, or **`cffi`** for interfacing between Python and C++.
+- Shared constants and configuration files should be stored in `shared/config/`.
+- Example configuration file (`shared/config/settings.yaml`):
+  ```yaml
+  acquisition_rate: 60
+  output_directory: "/data"
+  ```
+
+## 📝 Documentation
+
+- **[API Documentation](docs/API.md)**
+- **[Installation & Setup](docs/Setup.md)**
+- **[Usage Guide](docs/Usage.md)**
+
+## 📜 License
+
+This project is licensed under the **MIT License**.
+
+---
+
+🚀 *HERMES is designed for high-performance TPX3Cam data handling. Contributions are welcome!*
+

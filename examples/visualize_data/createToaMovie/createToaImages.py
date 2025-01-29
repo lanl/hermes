@@ -1,5 +1,5 @@
 import argparse
-import python.plotter as ph_plotter
+import analysis.plotter as ph_plotter
 
 # Parse command line arguments
 parser = argparse.ArgumentParser(description='Creates images from pixels in a given buffer.')

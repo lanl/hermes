@@ -1,4 +1,4 @@
-from pyhermes import tpx3serval
+from acquisition import tpx3serval
 import sys, time
 import json
 import epics

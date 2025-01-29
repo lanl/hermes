@@ -1,4 +1,4 @@
-from pyhermes import tpx3serval
+from acquisition import tpx3serval
 import json
 from zaber_motion import Library, Units
 from zaber_motion.ascii import Connection

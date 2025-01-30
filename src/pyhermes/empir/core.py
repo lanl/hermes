@@ -33,6 +33,15 @@ class empirConfig:
             {dest}/export/      <- Exported pixel, photon, and event information is stored here.
     """
     def __init__(self, dest, create_sub_dirs=False,verbose_level=0):
+        
+        # Sanitize the dest input
+        dest = os.path.abspath(os.path.normpath(dest))
+        
+        # Check if the directory exists
+        if not os.path.exists(dest):
+            logger.error(f"The specified destination directory does not exist: {dest}")
+            raise FileNotFoundError(f"The specified destination directory does not exist: {dest}")
+        
         # Initialize directory structure using Pydantic model
         self.directories = DirectoryStructure(
             destination_dir=f"{dest}",

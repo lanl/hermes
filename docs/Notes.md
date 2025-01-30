@@ -7,14 +7,14 @@ HERMES is a software framework designed for **facilitating the acquisition and a
 ```
 HERMES/
 ├── src/
-│   ├── cpp/                 # C++ codebase for unpacking & analysis
+│   ├── chermes/                 # C++ codebase for unpacking & analysis
 │   │   ├── include/         # Header files (.h)
 │   │   ├── unpackers/       # C++ TPX3Cam data unpackers
 │   │   ├── analyzers/       # C++ data analyzers
 │   │   ├── utils/           # Common C++ utilities
 │   │   ├── main.cpp         # (Optional) Main entry for standalone execution
 │   │   ├── CMakeLists.txt   # Build instructions (modern approach over Makefile)
-│   ├── python/              # Python-based acquisition, analysis, and wrappers
+│   ├── pyhermes/              # Python-based acquisition, analysis, and wrappers
 │   │   ├── acquisition/     # Data acquisition scripts
 │   │   ├── empir/          # Python interfaces EMPIR
 │   │   ├── analysis/        # Python-based analysis scripts

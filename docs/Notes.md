@@ -14,11 +14,14 @@ HERMES/
 │   │   ├── utils/           # Common C++ utilities
 │   │   ├── main.cpp         # (Optional) Main entry for standalone execution
 │   │   ├── CMakeLists.txt   # Build instructions (modern approach over Makefile)
-│   ├── pyhermes/              # Python-based acquisition, analysis, and wrappers
+│   ├── pyhermes/            # Python-based acquisition, analysis, and wrappers
 │   │   ├── acquisition/     # Data acquisition scripts
-│   │   ├── empir/          # Python interfaces EMPIR
+│   │   ├── empir/           # Python interfaces EMPIR
+│   │   |   ├── core.py      # core functions of EMPIR class
+│   │   |   ├── models.py    # pydantic models for EMPIR class
 │   │   ├── analysis/        # Python-based analysis scripts
 │   │   ├── utils/           # Shared Python utilities (logging, config parsing, etc.)
+│   │   ├── depreciated/     # Deprecated or unused scripts
 │   │   ├── __init__.py      # Makes this a package
 │   │   ├── main.py          # Main script for Python execution
 │   ├── shared/              # Code and data shared between C++ and Python

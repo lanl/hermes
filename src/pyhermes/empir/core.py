@@ -9,6 +9,11 @@ import threading
 from multiprocessing import Value, Lock
 import zipfile
 
+# using pydantic models for configuration of empir runs
+from .models import PixelToPhotonParams, PhotonToEventParams, EventToImageParams, DirectoryStructure
+
+# Import logger for empir functions
+from ..utils.logger import logger
 
 ######################################################################################
 # Class for configuring the processing of tpx3 files using EMPIR binaries
@@ -27,107 +32,85 @@ class empirConfig:
         separate export directory
             {dest}/export/      <- Exported pixel, photon, and event information is stored here.
     """
-    def __init__(self, dest):
-        # file structure
-        self.destination_dir = f"{dest}"                # locating of run directory
-        self.log_file_dir = f"{dest}/logFiles/"         # locating of logFiles
-        self.tpx3_file_dir = f"{dest}/tpx3Files/"       # locating of tpx3Files
-        self.list_file_dir = f"{dest}/listFiles/"       # locating of listFiles
-        self.event_file_dir = f"{dest}/eventFiles/"     # locating of eventFiles
-        self.final_file_dir = f"{dest}/final/"          # locating of final image files
-        self.export_file_dir = f"{dest}/exportFiles/"   # locating of exported info files
+    def __init__(self, dest, create_sub_dirs=False,verbose_level=0):
+        # Initialize directory structure using Pydantic model
+        self.directories = DirectoryStructure(
+            destination_dir=f"{dest}",
+            log_file_dir=f"{dest}/logFiles/",
+            tpx3_file_dir=f"{dest}/tpx3Files/",
+            list_file_dir=f"{dest}/listFiles/",
+            event_file_dir=f"{dest}/eventFiles/",
+            final_file_dir=f"{dest}/final/",
+            export_file_dir=f"{dest}/exportFiles/"
+        )
         
-        # --- pixel-to-photon parameters
-        self.pixel_d_space = 10                     # Distance in space for pixel search [px] (default: 10)
-        self.pixel_d_time = 1E-6                    # Distance in time for pixel search [s] (default: 1e-06)
-        self.pixel_min_number = 2                   # Minimum number of pixels in a photon event (default: 2)
-        self.use_tdc1 = False                       # Use TDC1 as trigger input (TDC1 is ignored by default)
+        # log the initialization of the directory structure
+        logger.info(f"Initialized DirectoryStructure: {self.directories.model_dump()}")
         
-        # --- photon-to-event parameters
-        self.photon_d_space = None                  # Distance in space for photon search [px]
-        self.photon_d_time = None                   # Distance in time for photon search [s]
-        self.photon_max_duration = None             # Maximum duration to look for photons [s] (default: inf)
-        self.photon_d_time_extF = None              # Extents duration by multiple of time difference to last photon (default: 0)
+        # Initialize parameters using Pydantic models
+        self.pixel_to_photon_params = PixelToPhotonParams()
+        self.photon_to_event_params = PhotonToEventParams()
+        self.event_to_image_params = EventToImageParams()
         
-        # --- event-to-image parameters
-        self.size_x = 512                           # Number of pixels in x direction for the final image (default: 512 px)
-        self.size_y = 512                           # Number of pixels in y direction for the final image (defaults to match size in x dimension)                                                      
-        self.nPhotons_min = 0                       # Only events with at least this number of photons will be used for the image (default: 0)
-        self.nPhotons_max = 18446744073709551615    # Only events with at most this number of photons will be used for the image (default: inf)
-        self.time_extTrigger = False                # Use the time relative to the external trigger for binning (default: false and use absolute time)
-        self.time_res_s = None                      # Timing resolution in seconds for creating an 3D image sequence (default: 2D image is created, integrated in time)
-        self.time_limit = None                      # Maximum of "time_res_s" bins for the 3D image sequence
-        self.psd_min = 0                            # Minimum PSD value
-        self.psd_max = 100                          # Maximum PSD value
+        # log the initialization of the parameters
+        logger.info("Initialized empirConfig with default parameters")
+        
+        # Check if subdirectories exist, and create them if they don't
+        self.check_or_create_sub_dirs(create_sub_dirs,verbose_level)
         
     def set_pixel_to_photon_params(self, d_space, d_time, min_number, use_tdc1):
-        """
-        Set parameters related to pixel to photon processing.
-
-        Args:
-            d_space (int): Distance in space for pixel search [px].
-            d_time (float): Distance in time for pixel search [s].
-            min_number (int): Minimum number of pixels in a photon event.
-            use_tdc1 (bool): Use TDC1 as trigger input.
-        """
-        self.pixel_d_space = d_space
-        self.pixel_d_time = d_time
-        self.pixel_min_number = min_number
-        self.use_tdc1 = use_tdc1
+        self.pixel_to_photon_params = PixelToPhotonParams(
+            d_space=d_space,
+            d_time=d_time,
+            min_number=min_number,
+            use_tdc1=use_tdc1
+        )
+        
+        # log the setting of the pixel to photon parameters
+        logger.info(f"Set PixelToPhotonParams: {self.pixel_to_photon_params.model_dump()}")
 
     def set_photon_to_event_params(self, d_space, d_time, max_duration, d_time_extF=None):
-        """
-        Set parameters related to photon to event processing.
-
-        Args:
-            d_space (int): Distance in space for photon search [px].
-            d_time (float): Distance in time for photon search [s].
-            max_duration (float): Maximum duration to look for photons [s].
-            d_time_extF (float, optional): Extents duration by multiple of time difference to last photon.
-        """
-        self.photon_d_space = d_space
-        self.photon_d_time = d_time
-        self.photon_max_duration = max_duration
-        self.photon_d_time_extF = d_time_extF if d_time_extF is not None else self.photon_d_time_extF
+        self.photon_to_event_params = PhotonToEventParams(
+            d_space=d_space,
+            d_time=d_time,
+            max_duration=max_duration,
+            d_time_extF=d_time_extF
+        )
+        
+        # log the setting of the photon to event parameters
+        logger.info(f"Set PhotonToEventParams: {self.photon_to_event_params.model_dump()}")
 
     def set_event_to_image_params(self, size_x=512, size_y=512, nPhotons_min=0, nPhotons_max=None, time_extTrigger=False, time_res_s=None, time_limit=None, psd_min=0, psd_max=100):
-        """
-        Set parameters related to event to image processing.
+        self.event_to_image_params = EventToImageParams(
+            size_x=size_x,
+            size_y=size_y,
+            nPhotons_min=nPhotons_min,
+            nPhotons_max=nPhotons_max,
+            time_extTrigger=time_extTrigger,
+            time_res_s=time_res_s,
+            time_limit=time_limit,
+            psd_min=psd_min,
+            psd_max=psd_max
+        )
+        
+        # log the setting of the event to image parameters
+        logger.info(f"Set EventToImageParams: {self.event_to_image_params.model_dump()}")
 
-        Args:
-            size_x (int): Number of pixels in x direction for the final image.
-            size_y (int): Number of pixels in y direction for the final image.
-            nPhotons_min (int): Minimum number of photons for image processing.
-            nPhotons_max (int): Maximum number of photons for image processing.
-            time_extTrigger (float, optional): Use time relative to external trigger for binning.
-            time_res_s (float, optional): Timing resolution in seconds for 3D image sequence.
-            time_limit (int, optional): Maximum of time bins for the 3D image sequence.
-            psd_min (float): Minimum PSD value.
-            psd_max (float): Maximum PSD value.
-        """
-        self.size_x = size_x
-        self.size_y = size_y
-        self.nPhotons_min = nPhotons_min
-        self.nPhotons_max = nPhotons_max
-        self.time_extTrigger = time_extTrigger
-        self.time_res_s = time_res_s
-        self.time_limit = time_limit
-        self.psd_min = psd_min
-        self.psd_max = psd_max
-
-    def check_or_create_sub_dirs(self,verbose_level=0):
+    def check_or_create_sub_dirs(self,create_sub_dirs=False,verbose_level=0):
         """
         Check if the subdirectories exist, and create them if they don't.
         """
-        for dir_name in [self.log_file_dir, self.tpx3_file_dir, self.list_file_dir, self.event_file_dir, self.final_file_dir, self.export_file_dir]:
+        for dir_name in [self.directories.log_file_dir, self.directories.tpx3_file_dir, self.directories.list_file_dir, self.directories.event_file_dir, self.directories.final_file_dir, self.directories.export_file_dir]:
             if(verbose_level>=1):
-                print("Checking directory: ", dir_name) 
-            if not os.path.exists(dir_name):
-                print(f"Could not find {dir_name}... now creating {dir_name}")
+                logger.info(f"Checking directory: {dir_name}")
+            if not os.path.exists(dir_name) and create_sub_dirs == True:
+                logger.warning(f"Could not find {dir_name}... now creating {dir_name}")
                 os.makedirs(dir_name)
             else:
                 if(verbose_level>=1):
-                    print(f"Found {dir_name}")
+                    logger.info(f"Found {dir_name}")
+                    
+                    
 ######################################################################################
 
 

@@ -5,7 +5,7 @@ This package contains modules and functions related to analysis with the EMPIR c
 """
 
 # Import necessary modules or functions here
-from .empir import (
+from .core import (
     empirConfig,
     zip_file,
     check_for_files,
@@ -21,6 +21,14 @@ from .empir import (
     ListFilesHandler,
     monitor_tpx3_files,
     monitor_list_files
+)
+
+# Import models
+from .models import (
+    PixelToPhotonParams,
+    PhotonToEventParams,
+    EventToImageParams,
+    DirectoryStructure
 )
 
 # Define package-level variables or functions if needed
@@ -39,9 +47,12 @@ __all__ = [
     'Tpx3FilesHandler',
     'ListFilesHandler',
     'monitor_tpx3_files',
-    'monitor_list_files'
+    'monitor_list_files',
+    'PixelToPhotonParams',
+    'PhotonToEventParams',
+    'EventToImageParams',
+    'DirectoryStructure'
 ]
-
 # Initialize package-level settings or configurations if needed
 def initialize():
     pass

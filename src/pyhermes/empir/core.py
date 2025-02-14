@@ -2,10 +2,11 @@
 import os, shutil, glob
 import subprocess
 import zipfile
+import struct
 
 # using pydantic models for configuration of empir runs
 from .models import PixelToPhotonParams, PhotonToEventParams, EventToImageParams, DirectoryStructure
-from .models import ExportedPixels, ExportedPhotons
+from .models import PixelActivation, Photons
 
 # Import logger for empir functions
 from ..utils.logger import logger
@@ -420,28 +421,40 @@ def export_photons(directories: DirectoryStructure, input_file="", output_file="
 
 
 #-------------------------------------------------------------------------------------
-def readin_exported_pixel_activations(file_path: str):
-    """ Reads a exported binary file from empir_export_pixelActivations and returns 
-        a list of pixel activations.
+def read_exported_pixel_activations(directories: DirectoryStructure, file_name: str):
+    """Reads a binary file from empir_export_pixelActivations and returns a list of pixel activations.
 
     Args:
-        file_path (str): The path to the binary file containing pixel activation data.
+        directories (DirectoryStructure): Directory structure for input, output, and log files.
+        file_name (str): The name of the binary file containing pixel activation data.
 
     Returns:
         List[PixelActivation]: A list of PixelActivation objects.
     """
-    exported_pixels = ExportedPixels.from_binary_file(file_path)
-    return exported_pixels.activations
+    file_path = os.path.join(directories.export_file_dir, file_name)
+    
+    # Create an empty list to store pixel activations
+    activations = []
+    
+    # Open the binary file for reading
+    with open(file_path, 'rb') as f:
+        # Read the file in chunks of 5 doubles (8 bytes each)
+        while True:
+            data = f.read(5 * 8) 
+            if not data:
+                break
+            x, y, absolute_time, time_over_threshold, time_relative_to_trigger = struct.unpack('5d', data)
+            
+            # Create a PixelActivation object 
+            activation = PixelActivation(
+                x=x,
+                y=y,
+                absolute_time=absolute_time,
+                time_over_threshold=time_over_threshold,
+                time_relative_to_trigger=time_relative_to_trigger
+            )
+            # Append the PixelActivation object to the list
+            activations.append(activation)
+    
+    return activations
 
-#-------------------------------------------------------------------------------------
-def readin_exported_photons(file_path: str):
-    """Reads the binary file and returns a list of photon data.
-
-    Args:
-        file_path (str): The path to the binary file containing photon data.
-
-    Returns:
-        List[Photon]: A list of Photon objects.
-    """
-    exported_photons = ExportedPhotons.from_binary_file(file_path)
-    return exported_photons.photons

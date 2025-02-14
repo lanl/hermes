@@ -41,7 +41,7 @@ class EventToImageParams(BaseModel):
     file_format: str = Field(default="tiff_w4", description='Format for the output file. Possibilities are: "tiff_w4" (default) or "tiff_w8"')
     parallel: bool = Field(default=True, description='Control parallel processing. Set "true" for on (default) and "false" for off')
     
-class PixelActivation(BaseModel):
+class PixelActivations(BaseModel):
     """
     Class used to represent pixel activation data exported from an output binary file using empir_export_pixelActivations.
 
@@ -59,7 +59,7 @@ class PixelActivation(BaseModel):
     time_relative_to_trigger: float = Field(..., description="Time relative to the last trigger")
     
     
-class Photon(BaseModel):
+class Photons(BaseModel):
     """
     Class used to represent photon data.
 
@@ -73,96 +73,3 @@ class Photon(BaseModel):
     y: float = Field(..., description="Y coordinate in pixels on the imaging chip")
     absolute_time: float = Field(..., description="Absolute time in seconds")
     time_relative_to_trigger: float = Field(..., description="Time relative to the last trigger")
-    
-class ExportedPixels(BaseModel):
-    """ 
-    This class is used to store and process pixel activation data.
-    It is initialized with a list of PixelActivation objects.
-    
-    Attributes:
-        activations (List[PixelActivation]): List of pixel activation objects.
-    """
-    activations: List[PixelActivation] = Field(default_factory=list, description="List of pixel activations")
-
-    @classmethod
-    def from_binary_file(cls, file_path: str) -> "ExportedPixels":
-        """Create an ExportedPixels instance from a binary file.
-
-        Args:
-            file_path (str): The path to the binary file containing pixel activation data.
-
-        Returns:
-            ExportedPixels: An instance of ExportedPixels populated with pixel activations.
-        """
-        
-        # Create an empty list to store pixel activations
-        activations = []
-        
-        # Open the binary file for reading
-        with open(file_path, 'rb') as f:
-            # Read the file in chunks of 5 doubles (8 bytes each)
-            while True:
-                data = f.read(5 * 8) 
-                if not data:
-                    break
-                x, y, absolute_time, time_over_threshold, time_relative_to_trigger = struct.unpack('5d', data)
-                
-                # Create a PixelActivation object 
-                activation = PixelActivation(
-                    x=x,
-                    y=y,
-                    absolute_time=absolute_time,
-                    time_over_threshold=time_over_threshold,
-                    time_relative_to_trigger=time_relative_to_trigger
-                )
-                # Append the PixelActivation object to the list
-                activations.append(activation)
-                
-        # Return an instance of ExportedPixels with the list of activations
-        return cls(activations=activations)
-    
-class ExportedPhotons(BaseModel):
-    """ 
-    This class is used to store and process photon data.
-    It is initialized with a list of Photon objects.
-    
-    Attributes:
-        photons (List[Photon]): List of photon objects.
-    """
-    photons: List[Photon] = Field(default_factory=list, description="List of photon objects")
-
-    @classmethod
-    def from_binary_file(cls, file_path: str) -> "ExportedPhotons":
-        """Create an ExportedPhotons instance from a binary file.
-
-        Args:
-            file_path (str): The path to the binary file containing photon data.
-
-        Returns:
-            ExportedPhotons: An instance of ExportedPhotons populated with photon data.
-        """
-        
-        # Create an empty list to store photon data
-        photons = []
-        
-        # Open the binary file for reading
-        with open(file_path, 'rb') as f:
-            # Read the file in chunks of 4 doubles (8 bytes each)
-            while True:
-                data = f.read(4 * 8) 
-                if not data:
-                    break
-                x, y, absolute_time, time_relative_to_trigger = struct.unpack('4d', data)
-                
-                # Create a Photon object 
-                photon = Photon(
-                    x=x,
-                    y=y,
-                    absolute_time=absolute_time,
-                    time_relative_to_trigger=time_relative_to_trigger
-                )
-                # Append the Photon object to the list
-                photons.append(photon)
-                
-        # Return an instance of ExportedPhotons with the list of photons
-        return cls(photons=photons)

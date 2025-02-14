@@ -18,9 +18,11 @@ HERMES/
 │   │   ├── acquisition/     # Data acquisition scripts
 │   │   ├── empir/           # Python interfaces EMPIR
 │   │   |   ├── core.py      # core functions of EMPIR class
-│   │   |   ├── models.py    # pydantic models for EMPIR class
+│   │   |   ├── export.py    # export functions builts around Wolfertz exporter. 
+|   |   |   ├── models.py    # pydantic models for EMPIR class
 │   │   ├── analysis/        # Python-based analysis scripts
 │   │   ├── utils/           # Shared Python utilities (logging, config parsing, etc.)
+|   |   |   ├── logger.py    # Logging functions for pyHERMES
 │   │   ├── depreciated/     # Deprecated or unused scripts
 │   │   ├── __init__.py      # Makes this a package
 │   │   ├── main.py          # Main script for Python execution

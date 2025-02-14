@@ -13,7 +13,9 @@ from .core import (
     process_photons_to_events,
     process_event_files_to_image_stack,
     export_pixel_activations,
-    export_photons
+    export_photons, 
+    readin_exported_pixel_activations, 
+    readin_exported_photons
 )
 
 # Import models
@@ -23,7 +25,9 @@ from .models import (
     EventToImageParams,
     DirectoryStructure,
     PixelActivation,
-    ExportedPixels
+    ExportedPixels,
+    Photon,
+    ExportedPhotons
 )
 
 # Define package-level variables or functions if needed
@@ -36,12 +40,16 @@ __all__ = [
     'process_event_files_to_image_stack',
     'export_pixel_activations',
     'export_photons',
+    'readin_exported_pixel_activations',
+    'readin_exported_photons',
     'PixelToPhotonParams',
     'PhotonToEventParams',
     'EventToImageParams',
     'DirectoryStructure',
     'PixelActivation',
-    'ExportedPixels'
+    'ExportedPixels', 
+    'Photon',
+    'ExportedPhotons'
 ]
 # Initialize package-level settings or configurations if needed
 def initialize():

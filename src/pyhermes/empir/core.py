@@ -4,7 +4,8 @@ import subprocess
 import zipfile
 
 # using pydantic models for configuration of empir runs
-from .models import PixelToPhotonParams, PhotonToEventParams, EventToImageParams, DirectoryStructure, ExportedPixels
+from .models import PixelToPhotonParams, PhotonToEventParams, EventToImageParams, DirectoryStructure, 
+from .models import ExportedPixels, ExportedPhotons
 
 # Import logger for empir functions
 from ..utils.logger import logger
@@ -109,18 +110,10 @@ class empirConfig:
             else:
                 if(verbose_level>=1):
                     logger.info(f"Found {dir_name}")
-                    
-                    
-######################################################################################
-
-
-
 
 
 ######################################################################################
 # Functions for processing tpx3 files using EMPIR binaries
-#-------------------------------------------------------------------------------------
-
 #-------------------------------------------------------------------------------------
 def zip_file(directory, filename):  
     """Zip a file in a specified directory.
@@ -203,8 +196,7 @@ def process_pixels_to_photons(params: PixelToPhotonParams, directories: Director
         except subprocess.CalledProcessError as e:
             logger.error(f"Error processing pixels to photons for {tpx3_file_name}: {e}")
     
-    
-    
+       
 #-------------------------------------------------------------------------------------
 def process_photons_to_events(params: PhotonToEventParams, directories: DirectoryStructure, list_file_name=""):
     """Runs empir_photon2event with the user-defined parameters. Input and output files are specified by the user.
@@ -308,7 +300,6 @@ def process_event_files_to_image_stack(params: EventToImageParams, directories: 
             logger.info(f"Successfully created image stack for {output_file}")
         except subprocess.CalledProcessError as e:
             logger.error(f"Error creating image stack for {output_file}: {e}")
-
 
 
 #-------------------------------------------------------------------------------------
@@ -426,9 +417,12 @@ def export_photons(directories: DirectoryStructure, input_file="", output_file="
             logger.info(f"Successfully exported photons for {input_file}")
         except subprocess.CalledProcessError as e:
             logger.error(f"Error exporting photons for {input_file}: {e}")
-            
-def get_pixel_activations(file_path: str):
-    """Reads the binary file and returns a list of pixel activations.
+
+
+#-------------------------------------------------------------------------------------
+def readin_exported_pixel_activations(file_path: str):
+    """ Reads a exported binary file from empir_export_pixelActivations and returns 
+        a list of pixel activations.
 
     Args:
         file_path (str): The path to the binary file containing pixel activation data.
@@ -438,3 +432,16 @@ def get_pixel_activations(file_path: str):
     """
     exported_pixels = ExportedPixels.from_binary_file(file_path)
     return exported_pixels.activations
+
+#-------------------------------------------------------------------------------------
+def readin_exported_photon_data(file_path: str):
+    """Reads the binary file and returns a list of photon data.
+
+    Args:
+        file_path (str): The path to the binary file containing photon data.
+
+    Returns:
+        List[Photon]: A list of Photon objects.
+    """
+    exported_photons = ExportedPhotons.from_binary_file(file_path)
+    return exported_photons.photons

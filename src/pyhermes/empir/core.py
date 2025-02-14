@@ -260,96 +260,77 @@ def process_photons_to_events(params: PhotonToEventParams, directories: Director
             
 
 #-------------------------------------------------------------------------------------
-def process_event_files_to_image_stack(event_file_dir="./",input_file_option=None, event_file_list = None, output_dir="./", x_pixels=512, y_pixels = 512, nPhotons_min=0,nPhotons_max=18446744073709551615, time_extTrigger = False, time_res_s=None, time_limit=None,psd_min="",psd_max="", log_dir="./"):
+def process_event_files_to_image_stack(params: EventToImageParams, directories: DirectoryStructure):
     """Runs empir_event2image with the user-defined parameters. Input and output files are specified by the user.
     
     Note: You need to have the EMPIR binaries installed and in your PATH to use this function.
-    
-    Here are the options of empir_event2image:
-    -i, --inputFiles       Comma separated list of paths to the input files
-    -I, --inputFolder      All files with the .empirevent extension directly in this folder will be processed
-        --inputListFile    Path of text file containing one input file per line
-    -o, --outputFile       Path (including file name) for the output
-    -x, --size_x           Number of pixels in x direction for the final image (default: 512 px)
-    -y, --size_y           Number of pixels in y direction for the final image (defaults to match size in x dimension)
-    -m, --nPhotons_min     Only events with at least this number of photons will be used for the image (default: 0)
-    -M, --nPhotons_max     Only events with at most this number of photons will be used for the image (default: 18446744073709551615)
-    -E, --time_extTrigger  Use the time relative to the external trigger for binning (default: use absolute time)
-    -t, --time_res_s       Timing resolution in seconds for creating an 3D image sequence (default: 2D image is created, integrated in time)
-    -T, --time_limit       Maximum of "time_res_s" bins for the 3D image sequence
-    -p, --psd_min          Minimum PSD value
-    -P, --psd_max          Maximum PSD value
 
     Args:
-        input_path (str): Path to the input file (.list).
-        dest (str): Destination directory name.
-        output_path (str): Path to the output file (.event).
-        dspace (int): Distance in space for photon search [px].
-        dtime (float): Distance in time for photon search [s].
-        durationMax (float): Maximum duration to look for photons [s].
+        params (EventToImageParams): Parameters for empir_event2image.
+        directories (DirectoryStructure): Directory structure for input, output, and log files.
     """
     
-    if input_file_option == "csv_list":
-        if event_file_list is None:
-            raise ValueError("No event file list provided")
-        elif len(event_file_list) == 0:
-            raise ValueError("Empty event file list provided")
-    elif input_file_option == "folder":
-        if event_file_dir is None:
-            raise ValueError("No event file directory provided")    
+    if params.input_files:
+        event_file_list = params.input_files
+    elif params.input_folder:
+        event_file_dir = params.input_folder
     else:
-        raise ValueError("No input file option provided. Please provide either 'csv_list', 'folder', or 'text_file' as input_file_option.")
+        raise ValueError("No input file option provided. Please provide either 'input_files', 'input_folder', or 'input_list_file' as input_file_option.")
 
-   
-    # add path to each file in the event_file_list
-    event_file_list = ",".join([os.path.join(event_file_dir, f) for f in event_file_list.split(",")])
-   
-    #Create log file
+    # Create log file
     log_file_name = "event2image.log"                 # creating name for corresponding log file  
-    log_file = os.path.join(log_dir, log_file_name)   # creating full path+name for log file.
+    log_file = os.path.join(directories.log_file_dir, log_file_name)   # creating full path+name for log file.
     
     # Create output image file and set path.
-    image_file_name = f"image_m{str(nPhotons_min)}_M{str(nPhotons_max)}_x{x_pixels}_y{y_pixels}_t{time_res_s}_T{time_limit}_p{psd_min}_P{psd_max}.tiff"
-    output_file = os.path.join(output_dir, image_file_name)     # creating full path+name for output event file.
-    print(f"Creating image stack {output_file}")
+    image_file_name = f"image_m{str(params.nPhotons_min)}_M{str(params.nPhotons_max)}_x{params.size_x}_y{params.size_y}_t{params.time_res_s}_T{params.time_limit}_p{params.psd_min}_P{params.psd_max}.tiff"
+    output_file = params.output_file or os.path.join(directories.final_file_dir, image_file_name)     # creating full path+name for output event file.
+    logger.info(f"Creating image stack {output_file}")
     
     # Prepare the subprocess command
     photons_to_events_command = [
         "empir_event2image",
-        "-m", str(nPhotons_min),
-        "-M", str(nPhotons_max),
-        "-E" if time_extTrigger else "", 
-        "-x", str(x_pixels),
-        "-y", str(y_pixels),
-        "-t", str(time_res_s) if time_res_s is not None else "",
-        "-T", str(time_limit) if time_limit is not None else "",
-        "-p", str(psd_min) if psd_min is not None else "",
-        "-P", str(psd_max) if psd_max is not None else "",
-        "-I", event_file_dir,
+        "-m", str(params.nPhotons_min),
+        "-M", str(params.nPhotons_max),
+        "-E" if params.time_extTrigger != "ignore" else "", 
+        "-x", str(params.size_x),
+        "-y", str(params.size_y),
+        "-t", str(params.time_res_s) if params.time_res_s is not None else "",
+        "-T", str(params.time_limit) if params.time_limit is not None else "",
+        "-p", str(params.psd_min) if params.psd_min is not None else "",
+        "-P", str(params.psd_max) if params.psd_max is not None else "",
+        "-I", params.input_folder,
         "-o", output_file
     ]
     
     photons_to_events_run_msg = f"Running command: {' '.join(photons_to_events_command)}"
-    print(photons_to_events_run_msg)
+    logger.info(photons_to_events_run_msg)
     
     with open(log_file, 'a') as log_output:
         log_output.write("\n--------\n")
         log_output.write("<HERMES> " + photons_to_events_run_msg + "\n")
-        subprocess.run(photons_to_events_command, stdout=log_output, stderr=subprocess.STDOUT)
+        logger.debug(f"Writing log to {log_file}")
+        try:
+            subprocess.run(photons_to_events_command, stdout=log_output, stderr=subprocess.STDOUT)
+            logger.info(f"Successfully created image stack for {output_file}")
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Error creating image stack for {output_file}: {e}")
+
+
 
 #-------------------------------------------------------------------------------------
 def export_pixel_activations(directories: DirectoryStructure, input_file="", output_file=""):
     """ This function exports pixel activations or hits from a tpx3 file using the binary empir_export_pixelActivations. 
     
-    NOTE:  You need to have the EMPIR "exporter" binaries installed and in your PATH to use this function. These binaries are
+    NOTE:   You need to have the EMPIR "exporter" binaries installed and in your PATH to use this function. These binaries are
             not available comercially, but can be obtained upon request from Adrian S. Losko and Alexander Wolfertz at TUM.
-    
-    NOTE:  Requires a .tpx3 file as input. The output info of each event will be contained in 5 consecutive doubles: 
+
+    NOTE:   The default exported format is a list of 64bit doubles in binary representation
+            The information of each event is contained in 5 consecutive doubles: 
             - x coordinate in pixels on the imaging chip
             - y coordinate in pixels on the imaging chip
             - absolute time in seconds
             - time over threshold in arbitrary units
-            - time relative to the last trigger (nan if the event occurred before the first trigger)
+            - time relative to the last trigger (nan if the event occured before the first trigger)
 
     Args:
         directories (DirectoryStructure): Directory structure for input, output, and log files.
@@ -378,3 +359,46 @@ def export_pixel_activations(directories: DirectoryStructure, input_file="", out
             logger.info(f"Successfully exported pixel activations for {input_file}")
         except subprocess.CalledProcessError as e:
             logger.error(f"Error exporting pixel activations for {input_file}: {e}")
+
+
+#-------------------------------------------------------------------------------------
+def export_photons(directories: DirectoryStructure, input_file="", output_file=""):
+    """ This function exports photon from an .empirphot file using the binary empir_export_photons. 
+
+    NOTE:   You need to have the EMPIR "exporter" binaries installed and in your PATH to use this function. These binaries are
+            not available comercially, but can be obtained upon request from Adrian S. Losko and Alexander Wolfertz at TUM.
+
+    NOTE:   The default exported format is a list of 64bit doubles in binary representation
+            The information of each event is contained in 4 consecutive doubles: 
+            - x coordinate in pixels on the imaging chip
+            - y coordinate in pixels on the imaging chip
+            - absolute time in seconds
+            - time relative to the last trigger (nan if the event occured before the first trigger)
+
+    Args:
+        directories (DirectoryStructure): Directory structure for input, output, and log files.
+        input_file (str, optional): A specific .empirphot file. Defaults to "".
+        output_file (str, optional): Specific output file name. Defaults to "".
+    """
+    
+    # Prepare the subprocess command for running "empir_export_photons"
+    # NOTE there is no "-i" or "-o" flag for this command, so we need to pass the input and output file paths as arguments
+    export_photons_command = [
+        "empir_export_photons",
+        os.path.join(directories.list_file_dir, input_file),
+        os.path.join(directories.export_file_dir, output_file)
+    ]
+    
+    log_file_name = input_file.split(".")[0] + ".export_photons"
+    export_photons_run_msg = f"Running command: {' '.join(export_photons_command)}"
+    
+    logger.info(f"EMPIR: Exporting photons for {input_file}")
+    
+    with open(os.path.join(directories.log_file_dir, log_file_name), 'w') as log_output:
+        log_output.write("<hermes> " + export_photons_run_msg + "\n")
+        logger.debug(f"Writing log to {os.path.join(directories.log_file_dir, log_file_name)}")
+        try:
+            subprocess.run(export_photons_command, stdout=log_output, stderr=subprocess.STDOUT)
+            logger.info(f"Successfully exported photons for {input_file}")
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Error exporting photons for {input_file}: {e}")

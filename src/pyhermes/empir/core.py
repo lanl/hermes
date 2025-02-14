@@ -4,7 +4,7 @@ import subprocess
 import zipfile
 
 # using pydantic models for configuration of empir runs
-from .models import PixelToPhotonParams, PhotonToEventParams, EventToImageParams, DirectoryStructure, 
+from .models import PixelToPhotonParams, PhotonToEventParams, EventToImageParams, DirectoryStructure
 from .models import ExportedPixels, ExportedPhotons
 
 # Import logger for empir functions
@@ -434,7 +434,7 @@ def readin_exported_pixel_activations(file_path: str):
     return exported_pixels.activations
 
 #-------------------------------------------------------------------------------------
-def readin_exported_photon_data(file_path: str):
+def readin_exported_photons(file_path: str):
     """Reads the binary file and returns a list of photon data.
 
     Args:

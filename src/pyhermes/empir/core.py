@@ -199,7 +199,7 @@ def process_pixels_to_photons(params: PixelToPhotonParams, directories: Director
 
     logger.info(f"EMPIR: Processing pixels to photons for {tpx3_file_name}")
 
-    with open(log_file, '+w') as log_output:
+    with open(log_file, 'a') as log_output:
         log_output.write("\n--------\n")
         log_output.write("<HERMES> " + pixel_to_photon_run_msg + "\n")
         logger.debug(f"Writing log to {log_file}")
@@ -338,11 +338,30 @@ def export_pixel_activations(directories: DirectoryStructure, input_file="", out
         output_file (str, optional): Specific output file name. Defaults to "".
     """
     
+    # Check if input and output directories exist
+    if not os.path.exists(directories.list_file_dir):
+        logger.error(f"Input directory does not exist: {directories.list_file_dir}")
+        return
+    if not os.path.exists(directories.export_file_dir):
+        logger.error(f"Output directory does not exist: {directories.export_file_dir}")
+        return
+
+    # Setup input and output file paths
+    input_file_path = os.path.join(directories.list_file_dir, input_file)
+    
+    # Check if the input file exists and is a .tpx3 file
+    if not os.path.exists(input_file_path):
+        logger.error(f"Input file does not exist: {input_file_path}")
+        return
+    if not input_file.endswith('.tpx3'):
+        logger.error(f"Input file is not a .tpx3 file: {input_file}")
+        return  
+    
     # Prepare the subprocess command for running "empir_export_pixelActivations"
     # NOTE there is no "-i" or "-o" flag for this command, so we need to pass the input and output file paths as arguments
     export_pixel_activations_command = [
         "empir_export_pixelActivations",
-        os.path.join(directories.tpx3_file_dir, input_file),
+        input_file_path,
         os.path.join(directories.export_file_dir, output_file)
     ]
     
@@ -351,8 +370,8 @@ def export_pixel_activations(directories: DirectoryStructure, input_file="", out
     
     logger.info(f"EMPIR: Exporting pixel activations for {input_file}")
     
-    with open(os.path.join(directories.log_file_dir, log_file_name), 'w') as log_output:
-        log_output.write("<hermes> " + export_pixel_activations_run_msg + "\n")
+    with open(os.path.join(directories.log_file_dir, log_file_name), 'a') as log_output:
+        log_output.write("<HERMES> " + export_pixel_activations_run_msg + "\n")
         logger.debug(f"Writing log to {os.path.join(directories.log_file_dir, log_file_name)}")
         try:
             subprocess.run(export_pixel_activations_command, stdout=log_output, stderr=subprocess.STDOUT)
@@ -381,6 +400,15 @@ def export_photons(directories: DirectoryStructure, input_file="", output_file="
         output_file (str, optional): Specific output file name. Defaults to "".
     """
     
+    # Check if the input file exists and is a .empirphot file
+    input_file_path = os.path.join(directories.list_file_dir, input_file)
+    if not os.path.exists(input_file_path):
+        logger.error(f"Input file does not exist: {input_file_path}")
+        return
+    if not input_file.endswith('.empirphot'):
+        logger.error(f"Input file is not a .empirphot file: {input_file}")
+        return  
+    
     # Prepare the subprocess command for running "empir_export_photons"
     # NOTE there is no "-i" or "-o" flag for this command, so we need to pass the input and output file paths as arguments
     export_photons_command = [
@@ -394,8 +422,8 @@ def export_photons(directories: DirectoryStructure, input_file="", output_file="
     
     logger.info(f"EMPIR: Exporting photons for {input_file}")
     
-    with open(os.path.join(directories.log_file_dir, log_file_name), 'w') as log_output:
-        log_output.write("<hermes> " + export_photons_run_msg + "\n")
+    with open(os.path.join(directories.log_file_dir, log_file_name), 'a') as log_output:
+        log_output.write("<HERMES> " + export_photons_run_msg + "\n")
         logger.debug(f"Writing log to {os.path.join(directories.log_file_dir, log_file_name)}")
         try:
             subprocess.run(export_photons_command, stdout=log_output, stderr=subprocess.STDOUT)

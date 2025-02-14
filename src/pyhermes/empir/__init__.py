@@ -13,10 +13,7 @@ from .core import (
     process_photons_to_events,
     process_event_files_to_image_stack,
     export_pixel_activations,
-    process_existing_tpx3_files,
-    process_existing_photon_files,
-    process_existing_event_files,
-    unpack_pixel_activations
+    export_photons
 )
 
 # Import models
@@ -36,10 +33,7 @@ __all__ = [
     'process_photons_to_events',
     'process_event_files_to_image_stack',
     'export_pixel_activations',
-    'process_existing_tpx3_files',
-    'process_existing_photon_files',
-    'process_existing_event_files',
-    'unpack_pixel_activations',
+    'export_photons',
     'PixelToPhotonParams',
     'PhotonToEventParams',
     'EventToImageParams',

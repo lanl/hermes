@@ -21,7 +21,9 @@ from .models import (
     PixelToPhotonParams,
     PhotonToEventParams,
     EventToImageParams,
-    DirectoryStructure
+    DirectoryStructure,
+    PixelActivation,
+    ExportedPixels
 )
 
 # Define package-level variables or functions if needed
@@ -37,7 +39,9 @@ __all__ = [
     'PixelToPhotonParams',
     'PhotonToEventParams',
     'EventToImageParams',
-    'DirectoryStructure'
+    'DirectoryStructure',
+    'PixelActivation',
+    'ExportedPixels'
 ]
 # Initialize package-level settings or configurations if needed
 def initialize():

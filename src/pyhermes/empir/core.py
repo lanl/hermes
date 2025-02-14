@@ -1,16 +1,10 @@
 
 import os, shutil, glob
 import subprocess
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
-from multiprocessing import Pool, cpu_count
-from functools import partial
-import threading
-from multiprocessing import Value, Lock
 import zipfile
 
 # using pydantic models for configuration of empir runs
-from .models import PixelToPhotonParams, PhotonToEventParams, EventToImageParams, DirectoryStructure
+from .models import PixelToPhotonParams, PhotonToEventParams, EventToImageParams, DirectoryStructure, ExportedPixels
 
 # Import logger for empir functions
 from ..utils.logger import logger
@@ -200,8 +194,8 @@ def process_pixels_to_photons(params: PixelToPhotonParams, directories: Director
     logger.info(f"EMPIR: Processing pixels to photons for {tpx3_file_name}")
 
     with open(log_file, 'a') as log_output:
-        log_output.write("\n--------\n")
         log_output.write("<HERMES> " + pixel_to_photon_run_msg + "\n")
+        log_output.write("--------\n")
         logger.debug(f"Writing log to {log_file}")
         try:
             subprocess.run(pixels_to_photons_command, stdout=log_output, stderr=subprocess.STDOUT)
@@ -249,8 +243,8 @@ def process_photons_to_events(params: PhotonToEventParams, directories: Director
     logger.info(f"EMPIR: Processing photons to events for {list_file_name}")
     
     with open(log_file, 'a') as log_output:
-        log_output.write("\n--------\n")
         log_output.write("<HERMES> " + photons_to_events_run_msg + "\n")
+        log_output.write("--------\n")
         logger.debug(f"Writing log to {log_file}")
         try:
             subprocess.run(photons_to_events_command, stdout=log_output, stderr=subprocess.STDOUT)
@@ -306,8 +300,8 @@ def process_event_files_to_image_stack(params: EventToImageParams, directories: 
     logger.info(photons_to_events_run_msg)
     
     with open(log_file, 'a') as log_output:
-        log_output.write("\n--------\n")
         log_output.write("<HERMES> " + photons_to_events_run_msg + "\n")
+        log_output.write("--------\n")
         logger.debug(f"Writing log to {log_file}")
         try:
             subprocess.run(photons_to_events_command, stdout=log_output, stderr=subprocess.STDOUT)
@@ -372,6 +366,7 @@ def export_pixel_activations(directories: DirectoryStructure, input_file="", out
     
     with open(os.path.join(directories.log_file_dir, log_file_name), 'a') as log_output:
         log_output.write("<HERMES> " + export_pixel_activations_run_msg + "\n")
+        log_output.write("--------\n")
         logger.debug(f"Writing log to {os.path.join(directories.log_file_dir, log_file_name)}")
         try:
             subprocess.run(export_pixel_activations_command, stdout=log_output, stderr=subprocess.STDOUT)
@@ -424,9 +419,22 @@ def export_photons(directories: DirectoryStructure, input_file="", output_file="
     
     with open(os.path.join(directories.log_file_dir, log_file_name), 'a') as log_output:
         log_output.write("<HERMES> " + export_photons_run_msg + "\n")
+        log_output.write("--------\n")
         logger.debug(f"Writing log to {os.path.join(directories.log_file_dir, log_file_name)}")
         try:
             subprocess.run(export_photons_command, stdout=log_output, stderr=subprocess.STDOUT)
             logger.info(f"Successfully exported photons for {input_file}")
         except subprocess.CalledProcessError as e:
             logger.error(f"Error exporting photons for {input_file}: {e}")
+            
+def get_pixel_activations(file_path: str):
+    """Reads the binary file and returns a list of pixel activations.
+
+    Args:
+        file_path (str): The path to the binary file containing pixel activation data.
+
+    Returns:
+        List[PixelActivation]: A list of PixelActivation objects.
+    """
+    exported_pixels = ExportedPixels.from_binary_file(file_path)
+    return exported_pixels.activations

@@ -28,6 +28,9 @@ __pycache__/
 # C extensions
 *.so
 
+# hermes logs
+*hermes.log
+
 # Distribution / packaging
 .Python
 build/
